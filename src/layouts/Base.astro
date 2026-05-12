@@ -1,5 +1,4 @@
 ---
-// Base layout — shared across all pages
 export interface Props {
   title: string;
   description: string;
@@ -14,6 +13,7 @@ const { title, description, ogType = 'website', ogUrl = 'https://hansakoch.com/'
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no">
   <title>{title}</title>
   <meta name="description" content={description}>
   <meta name="author" content="Hans Al Koch">
@@ -25,7 +25,7 @@ const { title, description, ogType = 'website', ogUrl = 'https://hansakoch.com/'
   <meta property="og:url" content={ogUrl}>
   <meta property="og:site_name" content="Hans Al Koch (HAK)">
 
-  <!-- JSON-LD Structured Data -->
+  <!-- JSON-LD -->
   {schema && (
     <script type="application/ld+json" set:html={JSON.stringify(schema, null, 2)} />
   )}
@@ -39,7 +39,7 @@ const { title, description, ogType = 'website', ogUrl = 'https://hansakoch.com/'
       --muted: #888;
       --accent: #ff3333;
       --accent-dim: #cc0000;
-      --radius: 8px;
+      --radius: 12px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -48,10 +48,24 @@ const { title, description, ogType = 'website', ogUrl = 'https://hansakoch.com/'
       color: var(--text);
       line-height: 1.6;
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
-    a { color: var(--accent-dim); text-decoration: none; }
+    a { color: var(--accent-dim); text-decoration: none; transition: color 0.2s; }
     a:hover { text-decoration: underline; }
-    .container { max-width: 800px; margin: 0 auto; padding: 60px 24px; }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px 24px 32px; }
+
+    /* Material Design surface */
+    .md-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+    .md-card:hover {
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
   </style>
 </head>
 <body>
