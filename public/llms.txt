@@ -1,0 +1,32 @@
+# Hans Al Koch (HAK) — Personal Site
+> Ai Architect & Autonomous Systems Builder — Cebu, Philippines
+
+## About
+Hans Al Koch (HAK) is an Ai Architect and autonomous systems builder based in Cebu, Philippines.
+OpenClaw early adopter and ecosystem builder (started Jan 2025). Organizer of OpenClaw Cebu 🦞.
+14+ years in digital marketing, now building sovereign Ai infrastructure.
+
+## Structure
+- Homepage: https://hansakoch.com/
+- CV: https://hansakoch.com/cv
+- Resume: https://hansakoch.com/resume
+- Cover Letter: https://hansakoch.com/cover-letter
+- Contact: https://hansakoch.com/contact
+
+## Socials
+- GitHub: https://github.com/hansakoch
+- X/Twitter: https://x.com/hansakoch
+- LinkedIn: https://linkedin.com/in/hansakochcom
+- Facebook: https://www.facebook.com/hanskoch/
+
+## Projects
+- OpenRoyleAl: https://openroyleal.com
+- Messagewith.me: https://messagewith.me
+- Reservewith.me: https://reservewith.me
+- DiningHaul.app: https://dininghaul.app
+
+## Contact
+- Email: hans@hansakoch.com
+- Phone UK: +44 7441 900 339
+- Phone US: +1 415 683 1016
+- Location: Cebu, Philippines

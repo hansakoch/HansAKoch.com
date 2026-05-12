@@ -1,0 +1,38 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+  title="Contact — Hans Al Koch (HAK)"
+  description="Get in touch with Hans Al Koch (HAK) — Ai Architect & Autonomous Systems Builder."
+  ogUrl="https://hansakoch.com/contact"
+>
+  <a href="/" style="display:inline-block;margin-bottom:32px;color:var(--accent-dim);font-size:0.9rem;">← hansakoch.com</a>
+
+  <h1 style="font-size:2rem;color:var(--accent);margin-bottom:8px;">Contact</h1>
+  <p style="color:var(--muted);margin-bottom:32px;">Get in touch — I'll get back to you as soon as possible.</p>
+
+  <form action="https://usebasin.com/f/REPLACE_WITH_FORM_ID" method="POST" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px;margin-bottom:32px;">
+    <label style="display:block;font-weight:600;margin-bottom:6px;font-size:0.9rem;">Name</label>
+    <input type="text" name="name" placeholder="Your name" required style="width:100%;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:0.95rem;margin-bottom:20px;transition:border-color 0.2s;">
+
+    <label style="display:block;font-weight:600;margin-bottom:6px;font-size:0.9rem;">Email</label>
+    <input type="email" name="email" placeholder="your@email.com" required style="width:100%;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:0.95rem;margin-bottom:20px;transition:border-color 0.2s;">
+
+    <label style="display:block;font-weight:600;margin-bottom:6px;font-size:0.9rem;">Subject</label>
+    <input type="text" name="subject" placeholder="What's this about?" style="width:100%;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:0.95rem;margin-bottom:20px;transition:border-color 0.2s;">
+
+    <label style="display:block;font-weight:600;margin-bottom:6px;font-size:0.9rem;">Message</label>
+    <textarea name="message" placeholder="Your message..." required style="width:100%;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:0.95rem;margin-bottom:20px;resize:vertical;min-height:120px;transition:border-color 0.2s;"></textarea>
+
+    <button type="submit" style="background:var(--accent);color:#fff;border:none;padding:14px 32px;font-size:1rem;font-weight:600;border-radius:var(--radius);cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--accent-dim)'" onmouseout="this.style.background='var(--accent)'">Send Message</button>
+  </form>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;">
+    <h3 style="font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:12px;">Other ways to reach me</h3>
+    <p style="margin-bottom:6px;font-size:0.9rem;">📧 Email: <a href="mailto:hans@hansakoch.com" style="color:var(--accent-dim);">hans@hansakoch.com</a></p>
+    <p style="margin-bottom:6px;font-size:0.9rem;">📱 UK: <a href="tel:+447441900339" style="color:var(--accent-dim);">+44 7441 900 339</a></p>
+    <p style="margin-bottom:6px;font-size:0.9rem;">📱 US: <a href="tel:+14156831016" style="color:var(--accent-dim);">+1 415 683 1016</a></p>
+    <p style="margin-bottom:6px;font-size:0.9rem;">💼 LinkedIn: <a href="https://linkedin.com/in/hansakochcom" style="color:var(--accent-dim);">linkedin.com/in/hansakochcom</a></p>
+    <p style="margin-bottom:6px;font-size:0.9rem;">💬 X/Twitter: <a href="https://x.com/hansakoch" style="color:var(--accent-dim);">@hansakoch</a></p>
+  </div>
+</Base>

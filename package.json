@@ -1,0 +1,19 @@
+{
+  "name": "hansakoch.com",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "deploy": "astro build && wrangler pages deploy dist --project-name=hansakoch --commit-dirty=true"
+  },
+  "dependencies": {
+    "astro": "^6.3.1"
+  },
+  "devDependencies": {
+    "wrangler": "^4.90.0"
+  }
+}
