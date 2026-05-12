@@ -7,7 +7,7 @@ import Base from '../layouts/Base.astro';
   ogType="profile"
   ogUrl="https://cv.hansakoch.com/"
 >
-  <a href="https://hansakoch.com/" style="display:inline-block;margin-bottom:24px;color:var(--accent-dim);font-size:0.9rem;">← hansakoch.com</a>
+  <a href="https://hansakoch.com/" class="no-print" style="display:inline-block;margin-bottom:24px;color:var(--accent-dim);font-size:0.9rem;">← hansakoch.com</a>
 
   <div style="text-align:center;margin-bottom:32px;">
     <h1 style="font-size:2rem;font-weight:700;color:var(--accent);margin-bottom:8px;">Hans Al Koch</h1>
@@ -90,11 +90,14 @@ import Base from '../layouts/Base.astro';
   <!-- Projects -->
   <div class="md-card">
     <h2 style="font-size:1.1rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent);margin-bottom:16px;text-align:center;">Projects & Ventures</h2>
-    <p style="font-size:0.92rem;color:#ccc;margin-bottom:8px;"><strong style="color:var(--text);">OpenRoyleAl</strong> <span style="color:var(--muted);">(2025–Present)</span> — Ai project umbrella: sovereign infrastructure, multi-node agents, autonomous operations.</p>
-    <p style="font-size:0.92rem;color:#ccc;margin-bottom:8px;"><strong style="color:var(--text);">Messagewith.me</strong> <span style="color:var(--muted);">(2025–Present)</span> — Unified messaging platform. Cloudflare-native architecture.</p>
-    <p style="font-size:0.92rem;color:#ccc;margin-bottom:8px;"><strong style="color:var(--text);">Reservewith.me / Orderwith.me</strong> <span style="color:var(--muted);">(2025–Present)</span> — Booking and ordering platforms. Cloudflare Workers + D1.</p>
-    <p style="font-size:0.92rem;color:#ccc;margin-bottom:8px;"><strong style="color:var(--text);">DiningHaul.app</strong> <span style="color:var(--muted);">(2025–Present)</span> — Food delivery discovery platform.</p>
-    <p style="font-size:0.92rem;color:#ccc;margin-bottom:0;"><strong style="color:var(--text);">IcebergSites</strong> <span style="color:var(--muted);">(Cloudflare Workers + TypeScript)</span> — Automated local SEO site deployment per client. Full SOP documented.</p>
+    <p style="font-size:0.92rem;color:#ccc;margin-bottom:8px;"><strong style="color:var(--text);">OpenRoyleAl</strong> <span style="color:var(--muted);">(2025–Present)</span> — Ai project umbrella: sovereign infrastructure, multi-node agents, autonomous operations. Running 24/7 across Surface laptop, Android Pi, and Cloudflare Workers.</p>
+    <p style="font-size:0.92rem;color:#ccc;margin-bottom:8px;"><strong style="color:var(--text);">Messagewith.me</strong> <span style="color:var(--muted);">(2025–Present, Alpha)</span> — Open-source form submission platform on Cloudflare stack. Designed to replace Basin for 43 agency clients with AI reply suggestions, lead quality scoring, and Deploy-to-Cloudflare self-host under MIT licence.</p>
+    <p style="font-size:0.92rem;color:#ccc;margin-bottom:8px;"><strong style="color:var(--text);">FansFollow.me (FFM Network)</strong> <span style="color:var(--muted);">(2023–Present, In Development)</span> — Creator platform embedding OpenClaw: every creator and fan gets their own AI agent for content promotion, fan engagement, and monetisation. Planned FFM Token crypto tokenomics for decentralised compute. Positioned for investment.</p>
+    <p style="font-size:0.92rem;color:#ccc;margin-bottom:8px;"><strong style="color:var(--text);">Reservewith.me / Orderwith.me</strong> <span style="color:var(--muted);">(2025–Present, Beta)</span> — Booking and ordering platforms. Cloudflare Workers + D1.</p>
+    <p style="font-size:0.92rem;color:#ccc;margin-bottom:8px;"><strong style="color:var(--text);">DiningHaul.app</strong> <span style="color:var(--muted);">(2025–Present, Beta)</span> — Food delivery discovery platform.</p>
+    <p style="font-size:0.92rem;color:#ccc;margin-bottom:8px;"><strong style="color:var(--text);">IcebergSites</strong> <span style="color:var(--muted);">(Cloudflare Workers + TypeScript)</span> — Automated local SEO site deployment per client. Deploys to dedicated Cloudflare Worker per company. Full SOP documented. Portfolio of Delta sites built with Ai.</p>
+    <p style="font-size:0.92rem;color:#ccc;margin-bottom:8px;"><strong style="color:var(--text);">Ai4SEO.co.uk</strong> <span style="color:var(--muted);">(2025)</span> — Proof-of-concept AI-powered SEO automation platform. Evolved into broader Ai business solution.</p>
+    <p style="font-size:0.92rem;color:#ccc;margin-bottom:0;"><strong style="color:var(--text);">Rosari.org</strong> <span style="color:var(--muted);">(2025–Present, Delta)</span> — Traditional Catholic prayer and devotional platform.</p>
   </div>
 
   <!-- Community & Skills -->
@@ -116,7 +119,7 @@ import Base from '../layouts/Base.astro';
     <p style="font-size:0.92rem;color:#ccc;"><strong>Early:</strong> First Webmaster — High School (1999), 20+ years SEO, Google Ads & Cloudflare certified</p>
   </div>
 
-  <div style="text-align:center;margin-top:24px;font-size:0.9rem;color:var(--muted);">
+  <div class="no-print" style="text-align:center;margin-top:24px;font-size:0.9rem;color:var(--muted);">
     <p>
       <a href="/resume" style="color:var(--accent-dim);">📄 Resume</a> ·
       <a href="/cover-letter" style="color:var(--accent-dim);">📝 Cover Letter</a> ·
@@ -154,6 +157,7 @@ import Base from '../layouts/Base.astro';
       a { color: #111 !important; text-decoration: none !important; }
       .container { padding: 0 !important; max-width: 100% !important; }
       .md-card { box-shadow: none !important; border: none !important; background: white !important; padding: 12px 0 !important; }
+      .no-print { display: none !important; }
     }
   </style>
 </Base>

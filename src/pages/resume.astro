@@ -7,7 +7,7 @@ import Base from '../layouts/Base.astro';
   ogType="profile"
   ogUrl="https://resume.hansakoch.com/"
 >
-  <a href="https://hansakoch.com/" style="display:inline-block;margin-bottom:24px;color:var(--accent-dim);font-size:0.9rem;">← hansakoch.com</a>
+  <a href="https://hansakoch.com/" class="no-print" style="display:inline-block;margin-bottom:24px;color:var(--accent-dim);font-size:0.9rem;">← hansakoch.com</a>
 
   <!-- Centered header -->
   <div style="text-align:center;margin-bottom:32px;">
@@ -76,7 +76,7 @@ import Base from '../layouts/Base.astro';
     <p style="font-size:0.92rem;color:#ccc;margin-bottom:6px;"><strong>Marketing:</strong> Google Analytics, Google Ads, Facebook Ads, Google Business Profile (168 locations)</p>
   </div>
 
-  <div style="text-align:center;margin-top:32px;font-size:0.85rem;color:var(--muted);">
+  <div class="no-print" style="text-align:center;margin-top:32px;font-size:0.85rem;color:var(--muted);">
     <p style="margin-bottom:12px;">
       <a href="#" onclick="window.print();return false;" style="display:inline-block;background:var(--accent);color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.85rem;box-shadow:0 2px 8px rgba(255,51,51,0.3);">🖨️ Download PDF</a>
     </p>
@@ -111,6 +111,7 @@ import Base from '../layouts/Base.astro';
       a { color: #111 !important; text-decoration: none !important; }
       .container { padding: 0 !important; max-width: 100% !important; }
       .md-card { box-shadow: none !important; border: none !important; background: white !important; padding: 16px 0 !important; }
+      .no-print { display: none !important; }
     }
   </style>
 </Base>
