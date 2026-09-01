@@ -1,8 +1,8 @@
-# Hans A. Koch (HAK) — Personal Site
+# Hans Al Koch (HAK) — Personal Site
 > Director of Agent Optimization. Cloudflare: Chief Agent (CFA).
 
 ## About
-Hans A. Koch (HAK). Al/Alfred is the middle name. Like DHH, but HAK.
+Hans Al Koch (HAK). Al/Alfred is the middle name. Like DHH, but HAK.
 Director of Agent Optimization.
 
 Digital marketing since 1999. OpenClaw early (Jan 2025). Iceberg Media since 2012.

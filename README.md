@@ -4,7 +4,7 @@
 [![Cloudflare Pages](https://img.shields.io/badge/Cloudflare-Pages-orange?logo=cloudflare)](https://pages.cloudflare.com)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Personal website for **Hans A. Koch (HAK)** — Director of Agent Optimization. Cloudflare: Chief Agent (CFA).
+Personal website for **Hans Al Koch (HAK)** — Director of Agent Optimization. Cloudflare: Chief Agent (CFA).
 
 ## 🚀 Stack
 
@@ -49,4 +49,4 @@ npm run deploy   # Build + deploy to Cloudflare Pages
 
 ---
 
-© 2026 Hans A. Koch — All rights reserved.
+© 2026 Hans Al Koch — All rights reserved.
