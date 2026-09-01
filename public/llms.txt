@@ -1,10 +1,12 @@
-# Hans Al Koch (HAK) — Personal Site
-> Ai Architect & Autonomous Systems Builder — Cebu, Philippines
+# Hans A. Koch (HAK) — Personal Site
+> Director of Agent Optimization. CFA — Cloudflare Chief of Agents.
 
 ## About
-Hans Al Koch (HAK) is an Ai Architect and autonomous systems builder based in Cebu, Philippines.
-OpenClaw early adopter and ecosystem builder (started Jan 2025). Organizer of OpenClaw Cebu 🦞.
-14+ years in digital marketing, now building sovereign Ai infrastructure.
+Hans A. Koch (HAK). Al/Alfred is the middle name. Like DHH, but HAK.
+Director of Agent Optimization. CFA = Cloudflare Chief of Agents.
+The CFA Chief Agent is alfred.report.
+
+Digital marketing since 1999. OpenClaw early (Jan 2025). Iceberg Media since 2012.
 
 ## Structure
 - Homepage: https://hansakoch.com/
@@ -20,6 +22,9 @@ OpenClaw early adopter and ecosystem builder (started Jan 2025). Organizer of Op
 - Facebook: https://www.facebook.com/hanskoch/
 
 ## Projects
+- Cloudflare Agent Memory (cf-memory-plugin): https://github.com/hansakoch/cf-memory-plugin
+- Demo: https://cloudflare-memory.pages.dev
+- CFA Chief Agent: https://alfred.report
 - OpenRoyleAl: https://openroyleal.com
 - Messagewith.me: https://messagewith.me
 - Reservewith.me: https://reservewith.me
@@ -29,4 +34,3 @@ OpenClaw early adopter and ecosystem builder (started Jan 2025). Organizer of Op
 - Email: hans@hansakoch.com
 - Phone UK: +44 7441 900 339
 - Phone US: +1 415 683 1016
-- Location: Cebu, Philippines

@@ -1,12 +1,15 @@
-# Hans Al Koch (HAK) — Full Profile
+# Hans A. Koch (HAK) — Full Profile
 
 ## Identity
-- Name: Hans Al Koch (HAK)
+- Name: Hans A. Koch (HAK)
+- Middle name: Al / Alfred
 - Email: hans@hansakoch.com
 - Phone UK: +44 7441 900 339
 - Phone US: +1 415 683 1016
-- Location: Cebu, Philippines
 - Website: https://hansakoch.com
+- Title: Director of Agent Optimization
+- CFA: Cloudflare Chief of Agents
+- Chief Agent: https://alfred.report
 
 ## Social Links
 - GitHub: https://github.com/hansakoch
@@ -15,25 +18,25 @@
 - Facebook: https://www.facebook.com/hanskoch/
 
 ## Professional Summary
-Ai Architect & Autonomous Systems Builder — 14+ years in digital marketing, now building sovereign Ai infrastructure. OpenClaw early adopter and ecosystem builder (started January 2025 at 18.7K stars, now 361K+). Organizer of the OpenClaw Cebu 🦞 community. Builds Ai agents that work 24/7/365 across distributed nodes — automating workflows, managing cloud infrastructure, and executing business operations autonomously.
+Director of Agent Optimization. CFA — Cloudflare Chief of Agents. The Chief Agent is alfred.report.
 
-Currently leading the pivot of Iceberg Media from traditional SEO to Ai agent implementation, delivering £20K–£35K enterprise Ai projects with recurring revenue models.
+Digital marketing since 1999. OpenClaw early (January 2025 at 18.7K stars, now 361K+). Iceberg Media since 2012 — UK SEO pivoting to Cloudflare-first agents across 98+ domains. Builds agents that work around the clock across distributed nodes.
 
 ## Core Competencies
 - Autonomous Ai Agent Architecture (OpenClaw ecosystem)
 - International Team Scaling (10+ members)
 - Cloudflare Workers, D1, KV, Durable Objects, Pages
+- Cloudflare Agent Memory
 - Strategic Business Pivoting (SEO → Ai Services)
 - Prompt Engineering & LLM Orchestration
-- Keynote Speaking (USA, UK, Philippines)
+- Keynote Speaking (USA, UK)
 - Full-Stack Development (TypeScript, Python, Bash)
-- Community Building (OpenClaw Cebu Organizer)
 - SEO, PPC, Google Analytics, Google Ads (20yr expertise)
 - Client Relationship Management (14yr retention)
 - Crypto/Web3 Architecture & Tokenomics
 
 ## Current Role
-Ai Systems Architect & Founder at OpenRoyleAl (January 2025 – Present, Cebu, Philippines)
+Ai Systems Architect & Founder at OpenRoyleAl (January 2025 – Present)
 - Architected sovereign Ai infrastructure using Cloudflare Workers, D1, Vectorize, Durable Objects
 - Built multi-node distributed task execution with 6s latency
 - Running 24/7 infrastructure across Surface laptop, Android Pi, and Cloudflare Workers
@@ -49,14 +52,15 @@ Ai Systems Architect & Founder at OpenRoyleAl (January 2025 – Present, Cebu, P
 3. Head of Digital Strategy at Ajaxx Restoration & First Response Restoration (May 2020 – June 2024)
 
 ## Projects
+- Cloudflare Agent Memory (cf-memory-plugin): persistent agent memory via Cloudflare
+  - https://github.com/hansakoch/cf-memory-plugin
+  - https://cloudflare-memory.pages.dev
+  - https://alfred.report
 - OpenRoyleAl: Ai project umbrella (2025 – Present)
 - Messagewith.me: Unified messaging platform (2025 – Present)
 - Reservewith.me / Orderwith.me: Booking and ordering platforms (2025 – Present)
 - DiningHaul.app: Food delivery discovery (2025 – Present)
 - IcebergSites: Local SEO Platform (Cloudflare Workers + TypeScript)
-
-## Community
-- OpenClaw Cebu 🦞 — Community Organizer & Host (April 2026 – Present)
 
 ## Technical Skills
 - Ai & Agents: OpenClaw, Claude Code, OpenAI, DeepSeek, Grok (xAI)
