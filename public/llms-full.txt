@@ -8,8 +8,7 @@
 - Phone US: +1 415 683 1016
 - Website: https://hansakoch.com
 - Title: Director of Agent Optimization
-- CFA: Cloudflare Chief of Agents
-- Chief Agent: https://alfred.report
+- CFA: Cloudflare: Chief Agent (CFA)
 
 ## Social Links
 - GitHub: https://github.com/hansakoch
@@ -18,7 +17,7 @@
 - Facebook: https://www.facebook.com/hanskoch/
 
 ## Professional Summary
-Director of Agent Optimization. CFA — Cloudflare Chief of Agents. The Chief Agent is alfred.report.
+Director of Agent Optimization.
 
 Digital marketing since 1999. OpenClaw early (January 2025 at 18.7K stars, now 361K+). Iceberg Media since 2012 — UK SEO pivoting to Cloudflare-first agents across 98+ domains. Builds agents that work around the clock across distributed nodes.
 

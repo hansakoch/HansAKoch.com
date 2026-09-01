@@ -4,7 +4,7 @@
 [![Cloudflare Pages](https://img.shields.io/badge/Cloudflare-Pages-orange?logo=cloudflare)](https://pages.cloudflare.com)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Personal website for **Hans A. Koch (HAK)** — Director of Agent Optimization. CFA, Cloudflare Chief of Agents.
+Personal website for **Hans A. Koch (HAK)** — Director of Agent Optimization. Cloudflare: Chief Agent (CFA).
 
 ## 🚀 Stack
 

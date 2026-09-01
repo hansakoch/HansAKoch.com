@@ -1,10 +1,9 @@
 # Hans A. Koch (HAK) — Personal Site
-> Director of Agent Optimization. CFA — Cloudflare Chief of Agents.
+> Director of Agent Optimization. Cloudflare: Chief Agent (CFA).
 
 ## About
 Hans A. Koch (HAK). Al/Alfred is the middle name. Like DHH, but HAK.
-Director of Agent Optimization. CFA = Cloudflare Chief of Agents.
-The CFA Chief Agent is alfred.report.
+Director of Agent Optimization.
 
 Digital marketing since 1999. OpenClaw early (Jan 2025). Iceberg Media since 2012.
 
@@ -24,7 +23,7 @@ Digital marketing since 1999. OpenClaw early (Jan 2025). Iceberg Media since 201
 ## Projects
 - Cloudflare Agent Memory (cf-memory-plugin): https://github.com/hansakoch/cf-memory-plugin
 - Demo: https://cloudflare-memory.pages.dev
-- CFA Chief Agent: https://alfred.report
+- alfred.report: https://alfred.report
 - OpenRoyleAl: https://openroyleal.com
 - Messagewith.me: https://messagewith.me
 - Reservewith.me: https://reservewith.me
