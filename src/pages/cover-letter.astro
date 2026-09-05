@@ -1,11 +1,36 @@
 ---
 import Base from '../layouts/Base.astro';
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Hans Al Koch",
+  "givenName": "Hans",
+  "additionalName": "Al",
+  "familyName": "Koch",
+  "alternateName": ["HAK", "Hans Al Koch"],
+  "email": "hans@hansakoch.com",
+  "telephone": ["+447882517454", "+13133558675"],
+  "url": "https://hansakoch.com",
+  "sameAs": [
+    "https://github.com/hansakoch",
+    "https://x.com/hansakoch",
+    "https://linkedin.com/in/hansakochcom",
+    "https://www.facebook.com/hanskoch/",
+    "https://alfred.report"
+  ],
+  "jobTitle": "Director of Agent Optimization",
+  "worksFor": [
+    { "@type": "Organization", "name": "OpenRoyleAl", "url": "https://openroyleal.com" },
+    { "@type": "Organization", "name": "Iceberg Media", "url": "https://icebergmedia.co.uk" }
+  ]
+};
 ---
 <Base
   title="Cover Letter — Hans Al Koch (HAK)"
   description="Cover letter for Hans Al Koch (HAK) — Director of Agent Optimization. Cloudflare: Chief Agent (CFA)."
   ogType="article"
   ogUrl="https://hansakoch.com/cover-letter"
+  schema={schema}
 >
   <a href="https://hansakoch.com/" style="display:inline-block;margin-bottom:24px;color:var(--accent-dim);font-size:0.9rem;">← hansakoch.com</a>
 
@@ -14,7 +39,7 @@ import Base from '../layouts/Base.astro';
   </div>
   <p style="text-align:center;color:var(--muted);font-size:0.85rem;margin-bottom:8px;">Director of Agent Optimization · Cloudflare: Chief Agent (CFA)</p>
   <p style="text-align:center;color:var(--muted);font-size:0.9rem;margin-bottom:8px;">
-    <a href="tel:+447441900339" style="color:var(--text);">+44 7441 900 339</a> · <a href="mailto:hans@hansakoch.com" style="color:var(--text);">hans@hansakoch.com</a>
+    <a href="tel:+447882517454" style="color:var(--text);">+44 7882 517 454</a> · <a href="tel:+13133558675" style="color:var(--text);">+1 (313) 355-8675</a> · <a href="mailto:hans@hansakoch.com" style="color:var(--text);">hans@hansakoch.com</a>
   </p>
   <p style="text-align:center;color:var(--muted);font-size:0.85rem;margin-bottom:32px;">
     <a href="https://linkedin.com/in/hansakochcom" style="color:var(--accent-dim);">linkedin.com/in/hansakochcom</a> ·
@@ -24,9 +49,9 @@ import Base from '../layouts/Base.astro';
 
   <p style="font-size:0.92rem;color:#ccc;margin-bottom:10px;">Dear Hiring Manager,</p>
 
-  <p style="font-size:0.92rem;color:#ccc;margin-bottom:10px;">I build agents that stay up. OpenRoyleAl runs on Cloudflare Workers, D1, Vectorize, and Durable Objects — Linux and Android nodes, 6-second average latency, 63+ secrets in D1. OpenClaw since January 2025 (18.7K stars then, 361K+ now).</p>
+  <p style="font-size:0.92rem;color:#ccc;margin-bottom:10px;">I build agents that stay up. OpenRoyleAl runs on Cloudflare Workers, D1, Vectorize, and Durable Objects — Linux and Android nodes, 6-second average latency, 63+ secrets in D1. OpenClaw since January 2025 (18.7K stars then, 388K now).</p>
 
-  <p style="font-size:0.92rem;color:#ccc;margin-bottom:10px;">Iceberg Media is 14 years of UK SEO. I am pivoting the shop to agents: Cloudflare-first across 98+ domains, 168 Google Business Profiles, teams of 10+.</p>
+  <p style="font-size:0.92rem;color:#ccc;margin-bottom:10px;">Iceberg Media is 14 years of UK SEO. I am pivoting the shop to agents: Cloudflare-first across 145+ domains, 168 Google Business Profiles, teams of 10+.</p>
 
   <p style="font-size:0.92rem;color:#ccc;margin-bottom:10px;">Cloudflare Agent Memory — persistent recall over HTTP — lives at <a href="https://github.com/hansakoch/cf-memory-plugin" style="color:var(--accent-dim);">cf-memory-plugin</a>. I would welcome the chance to talk.</p>
 

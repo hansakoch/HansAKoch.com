@@ -9,10 +9,10 @@ Digital marketing since 1999. OpenClaw early (Jan 2025). Iceberg Media since 201
 
 ## Structure
 - Homepage: https://hansakoch.com/
-- CV: https://hansakoch.com/cv
-- Resume: https://hansakoch.com/resume
-- Cover Letter: https://hansakoch.com/cover-letter
-- Contact: https://hansakoch.com/contact
+- CV: https://hansakoch.com/cv/
+- Resume: https://hansakoch.com/resume/
+- Cover Letter: https://hansakoch.com/cover-letter/
+- Contact: https://hansakoch.com/contact/
 
 ## Socials
 - GitHub: https://github.com/hansakoch
@@ -28,8 +28,10 @@ Digital marketing since 1999. OpenClaw early (Jan 2025). Iceberg Media since 201
 - Messagewith.me: https://messagewith.me
 - Reservewith.me: https://reservewith.me
 - DiningHaul.app: https://dininghaul.app
+- IcebergSites: https://icebergsites.com
+- Rosari.org: https://rosari.org
 
 ## Contact
 - Email: hans@hansakoch.com
-- Phone UK: +44 7441 900 339
-- Phone US: +1 415 683 1016
+- Phone UK: +44 7882 517 454
+- Phone US: +1 (313) 355-8675

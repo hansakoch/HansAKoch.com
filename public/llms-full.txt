@@ -4,7 +4,7 @@
 - Name: Hans Al Koch (HAK)
 - Middle name: Al / Alfred
 - Email: hans@hansakoch.com
-- Phone UK: +44 7441 900 339
+- Phone UK: +44 7882 517 454
 - Phone US: +1 415 683 1016
 - Website: https://hansakoch.com
 - Title: Director of Agent Optimization
@@ -19,7 +19,7 @@
 ## Professional Summary
 Director of Agent Optimization.
 
-Digital marketing since 1999. OpenClaw early (January 2025 at 18.7K stars, now 361K+). Iceberg Media since 2012 — UK SEO pivoting to Cloudflare-first agents across 98+ domains. Builds agents that work around the clock across distributed nodes.
+Digital marketing since 1999. OpenClaw early (January 2025 at 18.7K stars, now 388K). Iceberg Media since 2012 — UK SEO pivoting to Cloudflare-first agents across 145+ domains. Builds agents that work around the clock across distributed nodes.
 
 ## Core Competencies
 - Autonomous Ai Agent Architecture (OpenClaw ecosystem)
@@ -63,7 +63,7 @@ Ai Systems Architect & Founder at OpenRoyleAl (January 2025 – Present)
 
 ## Technical Skills
 - Ai & Agents: OpenClaw, Claude Code, OpenAI, DeepSeek, Grok (xAI)
-- Cloud: Cloudflare Workers, D1, KV, Durable Objects, Pages, DNS, 98+ domains
+- Cloud: Cloudflare Workers, D1, KV, Durable Objects, Pages, DNS, 145+ domains, 148+ workers
 - Languages: TypeScript, JavaScript, Python, Bash, HTML/CSS
 - DevOps: GitHub Actions, wrangler CLI, systemd, Linux, cron
 

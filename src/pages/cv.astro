@@ -1,11 +1,36 @@
 ---
 import Base from '../layouts/Base.astro';
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Hans Al Koch",
+  "givenName": "Hans",
+  "additionalName": "Al",
+  "familyName": "Koch",
+  "alternateName": ["HAK", "Hans Al Koch"],
+  "email": "hans@hansakoch.com",
+  "telephone": ["+447882517454", "+13133558675"],
+  "url": "https://hansakoch.com",
+  "sameAs": [
+    "https://github.com/hansakoch",
+    "https://x.com/hansakoch",
+    "https://linkedin.com/in/hansakochcom",
+    "https://www.facebook.com/hanskoch/",
+    "https://alfred.report"
+  ],
+  "jobTitle": "Director of Agent Optimization",
+  "worksFor": [
+    { "@type": "Organization", "name": "OpenRoyleAl", "url": "https://openroyleal.com" },
+    { "@type": "Organization", "name": "Iceberg Media", "url": "https://icebergmedia.co.uk" }
+  ]
+};
 ---
 <Base
   title="Hans Al Koch (HAK) — Curriculum Vitae"
   description="Curriculum Vitae of Hans Al Koch (HAK) — Director of Agent Optimization. Cloudflare: Chief Agent (CFA)."
   ogType="profile"
   ogUrl="https://cv.hansakoch.com/"
+  schema={schema}
 >
   <a href="https://hansakoch.com/" class="no-print" style="display:inline-block;margin-bottom:24px;color:var(--accent-dim);font-size:0.9rem;">← hansakoch.com</a>
 
@@ -13,7 +38,7 @@ import Base from '../layouts/Base.astro';
     <h1 style="font-size:2rem;font-weight:700;color:var(--accent);margin-bottom:8px;">Hans Al Koch</h1>
     <p style="color:var(--muted);font-size:0.85rem;margin-bottom:4px;">Director of Agent Optimization · Cloudflare: Chief Agent (CFA)</p>
     <p style="color:var(--muted);font-size:0.9rem;margin-bottom:4px;">
-      <a href="tel:+447441900339" style="color:var(--text);">+44 7441 900 339</a> · <a href="tel:+14156831016" style="color:var(--text);">+1 415 683 1016</a> · <a href="mailto:hans@hansakoch.com" style="color:var(--text);">hans@hansakoch.com</a>
+      <a href="tel:+447882517454" style="color:var(--text);">+44 7882 517 454</a> · <a href="tel:+14156831016" style="color:var(--text);">+1 415 683 1016</a> · <a href="mailto:hans@hansakoch.com" style="color:var(--text);">hans@hansakoch.com</a>
     </p>
     <p style="color:var(--muted);font-size:0.85rem;">
       <a href="https://linkedin.com/in/hansakochcom" style="color:var(--accent-dim);">linkedin.com/in/hansakochcom</a> ·
@@ -26,8 +51,8 @@ import Base from '../layouts/Base.astro';
 
   <div class="md-card" style="text-align:center;">
     <h2 style="font-size:1.1rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent);margin-bottom:16px;">Professional Summary</h2>
-    <p style="font-size:0.92rem;color:#ccc;margin-bottom:10px;">Digital marketing since 1999. Early on <a href="https://github.com/openclaw/openclaw" style="color:var(--accent-dim);font-weight:600;">OpenClaw</a> (January 2025 at 18.7K ⭐, now <strong><span id="openclaw-stars">371K</span> ⭐</strong>). I build agents that work around the clock across distributed nodes.</p>
-    <p style="font-size:0.92rem;color:#ccc;">Director & CMO of <a href="https://icebergmedia.co.uk" style="color:var(--accent-dim);">Iceberg Media</a> (2012–present) — UK SEO, now pivoting to Cloudflare-first agents across 98+ domains.</p>
+    <p style="font-size:0.92rem;color:#ccc;margin-bottom:10px;">Digital marketing since 1999. Early on <a href="https://github.com/openclaw/openclaw" style="color:var(--accent-dim);font-weight:600;">OpenClaw</a> (January 2025 at 18.7K ⭐, now <strong><span id="openclaw-stars">388K</span> ⭐</strong>). I build agents that work around the clock across distributed nodes.</p>
+    <p style="font-size:0.92rem;color:#ccc;">Director & CMO of <a href="https://icebergmedia.co.uk" style="color:var(--accent-dim);">Iceberg Media</a> (2012–present) — UK SEO, now pivoting to Cloudflare-first agents across 145+ domains.</p>
   </div>
 
   <div class="md-card">
@@ -67,7 +92,7 @@ import Base from '../layouts/Base.astro';
     <ul style="padding-left:20px;margin-bottom:24px;">
       <li style="margin-bottom:4px;font-size:0.92rem;color:#ccc;">Leading strategic pivot from 14-year SEO agency (Iceberg Media, 2012–present) to Ai services company.</li>
       <li style="margin-bottom:4px;font-size:0.92rem;color:#ccc;">Transitioned pricing from £300/month SEO retainers to enterprise Ai agent implementation projects with recurring revenue.</li>
-      <li style="margin-bottom:4px;font-size:0.92rem;color:#ccc;">Designed Cloudflare-first architecture: Workers, Pages, DNS, security across 98+ domains.</li>
+      <li style="margin-bottom:4px;font-size:0.92rem;color:#ccc;">Designed Cloudflare-first architecture: Workers, Pages, DNS, security across 145+ domains.</li>
       <li style="margin-bottom:4px;font-size:0.92rem;color:#ccc;">Managing 168 Google Business Profiles and approximately 110 domains.</li>
       <li style="margin-bottom:4px;font-size:0.92rem;color:#ccc;">Built and managed teams of 10+ across development, virtual support, and sales.</li>
     </ul>
@@ -105,14 +130,14 @@ import Base from '../layouts/Base.astro';
   <div class="md-card">
     <h2 style="font-size:1.1rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent);margin-bottom:16px;text-align:center;">Community & Speaking</h2>
     <p style="font-size:0.92rem;color:#ccc;margin-bottom:10px;"><strong><a href="https://alfred.report" style="color:var(--accent-dim);">alfred.report</a></strong></p>
-    <p style="font-size:0.92rem;color:#ccc;margin-bottom:10px;">Early on <a href="https://github.com/openclaw/openclaw" style="color:var(--accent-dim);">OpenClaw</a>: January 25, 2025 (18.7K ⭐ → <strong id="openclaw-stars2">371K</strong> ⭐ today).</p>
+    <p style="font-size:0.92rem;color:#ccc;margin-bottom:10px;">Early on <a href="https://github.com/openclaw/openclaw" style="color:var(--accent-dim);">OpenClaw</a>: January 25, 2025 (18.7K ⭐ → <strong id="openclaw-stars2">388K</strong> ⭐ today).</p>
     <p style="font-size:0.92rem;color:#ccc;"><strong>Keynote Speaking</strong> — Ai and business transformation, SEO and digital marketing strategy, open-source agents (USA, UK)</p>
   </div>
 
   <div class="md-card">
     <h2 style="font-size:1.1rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--accent);margin-bottom:16px;text-align:center;">Technical Skills</h2>
     <p style="font-size:0.92rem;color:#ccc;margin-bottom:6px;"><strong>Ai & Agents:</strong> OpenClaw, Claude Code, OpenAI, DeepSeek, Grok (xAI), prompt engineering, autonomous agent architecture</p>
-    <p style="font-size:0.92rem;color:#ccc;margin-bottom:6px;"><strong>Cloud:</strong> Cloudflare Workers, D1, KV, Durable Objects, Pages, DNS, Zero Trust Access, R2, 98+ domains, 47+ workers</p>
+    <p style="font-size:0.92rem;color:#ccc;margin-bottom:6px;"><strong>Cloud:</strong> Cloudflare Workers, D1, KV, Durable Objects, Pages, DNS, Zero Trust Access, R2, 145+ domains, 148+ workers</p>
     <p style="font-size:0.92rem;color:#ccc;margin-bottom:6px;"><strong>Languages:</strong> TypeScript, JavaScript, Python, Bash, HTML/CSS</p>
     <p style="font-size:0.92rem;color:#ccc;margin-bottom:6px;"><strong>DevOps:</strong> GitHub Actions, wrangler CLI, systemd, Linux administration, cron automation</p>
     <p style="font-size:0.92rem;color:#ccc;margin-bottom:6px;"><strong>Marketing:</strong> Google Analytics, Google Ads, Microsoft Advertising, Facebook Ads, SEO tools, Google Business Profile (168 locations)</p>

@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /private/
+Disallow: /cdn-cgi/
 
 # AI bot rules — allow responsible AI crawlers
 User-agent: GPTBot

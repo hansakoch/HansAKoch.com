@@ -2,31 +2,31 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://hansakoch.com/</loc>
-    <lastmod>2026-05-12</lastmod>
+    <lastmod>2026-09-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://hansakoch.com/cv</loc>
-    <lastmod>2026-05-12</lastmod>
+    <loc>https://hansakoch.com/cv/</loc>
+    <lastmod>2026-09-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://hansakoch.com/resume</loc>
-    <lastmod>2026-05-12</lastmod>
+    <loc>https://hansakoch.com/resume/</loc>
+    <lastmod>2026-09-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://hansakoch.com/cover-letter</loc>
-    <lastmod>2026-05-12</lastmod>
+    <loc>https://hansakoch.com/cover-letter/</loc>
+    <lastmod>2026-09-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://hansakoch.com/contact</loc>
-    <lastmod>2026-05-12</lastmod>
+    <loc>https://hansakoch.com/contact/</loc>
+    <lastmod>2026-09-05</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
