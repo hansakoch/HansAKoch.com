@@ -32,7 +32,22 @@ def scrape():
     sites = os.environ.get("JOBSPY_SITES", "linkedin,indeed").split(",")
     out = []
     for term, location in QUERIES:
-        df = scrape_jobs(site_name=sites, search_term=term, location=location, results_wanted=10, hours_old=168)
+        frames = []
+        for site in sites:
+            site = site.strip()
+            if not site:
+                continue
+            try:
+                df_one = scrape_jobs(site_name=[site], search_term=term, location=location, results_wanted=10, hours_old=168)
+                if df_one is not None and len(df_one):
+                    frames.append(df_one)
+            except Exception as e:
+                print(f"scrape fail {site}/{term!r}@{location!r}: {e}", file=sys.stderr)
+                continue
+        if not frames:
+            continue
+        import pandas as pd
+        df = pd.concat(frames, ignore_index=True) if len(frames) > 1 else frames[0]
         if df is None or len(df) == 0:
             continue
         for _, row in df.iterrows():
@@ -56,8 +71,9 @@ def main():
         print("Set CAREERS_INGEST_URL", file=sys.stderr)
         sys.exit(2)
     jobs = scrape()
+    print(f"scraped={len(jobs)}", flush=True)
     body = json.dumps({"password": password, "jobs": jobs}).encode()
-    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json", "User-Agent": "OpenCareers-JobSpy/1.0", "X-Careers-Password": password})
     with urllib.request.urlopen(req) as resp:
         print(resp.read().decode())
 

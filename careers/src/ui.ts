@@ -21,6 +21,10 @@ h1{font-size:22px;color:#fff} .muted{color:#888;font-size:13px}
 input,textarea{width:100%;background:#0a0a0a;border:1px solid #333;color:#fff;padding:10px;border-radius:6px}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 pre{white-space:pre-wrap;font-size:12px;color:#ccc;max-height:280px;overflow:auto}
+.banner{border-radius:8px;padding:12px 14px;margin:10px 0;border:1px solid #333;font-size:14px}
+.banner.ok{background:#14532d;border-color:#4ade80;color:#bbf7d0}
+.banner.warn{background:#3a3a1a;border-color:#facc15;color:#fde68a}
+.banner.err{background:#3a1a1a;border-color:#f87171;color:#fecaca}
 </style></head><body>
 <div class="top"><div class="wrap">
 <h1>Open Careers</h1>
@@ -95,11 +99,34 @@ export function applyPage(job: any, followUp = '') {
   );
 }
 
-export function searchPage(queries: { term: string; location: string }[]) {
+export type SearchStatus = {
+  kicked?: string;
+  adapter?: string;
+  detail?: string;
+};
+
+export function searchPage(queries: { term: string; location: string }[], status?: SearchStatus) {
   const q = queries.map((x) => `<li>${esc(x.term)} · ${esc(x.location)}</li>`).join('');
+  let banner = '';
+  if (status && (status.kicked !== undefined || status.adapter || status.detail)) {
+    const kicked = status.kicked === '1' || status.kicked === 'true';
+    const cls = kicked ? 'ok' : status.adapter === 'manual' ? 'warn' : 'err';
+    const title = kicked
+      ? 'Search kicked — JobSpy webhook accepted the run.'
+      : status.adapter === 'manual'
+        ? 'Search not kicked — no SEARCH_WEBHOOK_URL (manual mode).'
+        : 'Search not kicked — adapter did not start a scrape.';
+    banner = `<div class="banner ${cls}" role="status">
+      <strong>${esc(title)}</strong>
+      <p class="muted" style="margin-top:6px;color:inherit;opacity:.9">adapter=<code>${esc(status.adapter || 'unknown')}</code> · kicked=<code>${esc(status.kicked ?? '0')}</code>
+      ${status.detail ? ` · ${esc(status.detail)}` : ''}</p>
+      ${!kicked && status.adapter === 'manual' ? '<p style="margin-top:8px">Jobs still land via cron / <code>scripts/jobspy-ingest.py</code> → <code>/api/ingest</code>. Set Worker secret SEARCH_WEBHOOK_URL to make this button fire JobSpy.</p>' : ''}
+    </div>`;
+  }
   return layout(
     'Search — Open Careers',
-    `<div class="card">
+    `${banner}
+    <div class="card">
       <p class="muted">Worldwide queries (Gate 0 drops junk before D1 visible rows). Vultr JobSpy posts to <code>/api/ingest</code>. Cron hits SEARCH_WEBHOOK_URL when set; else Browser Run fallback is marked needs_you.</p>
       <ol class="muted">${q}</ol>
       <form method="post" action="/api/search/run" class="row"><button class="btn pri">Queue search run</button></form>
