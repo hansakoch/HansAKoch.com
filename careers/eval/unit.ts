@@ -6,6 +6,9 @@ import { DEFAULT_PROFILE } from '../src/profile.ts';
 import { atsDomain, classifyAts } from '../src/ids.ts';
 import { standingBrief } from '../src/oral.ts';
 import { decide } from '../src/gates.ts';
+import { detectVideoAsk } from '../src/apply/video.ts';
+import { followUpDraft } from '../src/apply/followup.ts';
+import { jobsFromRss } from '../src/search/rss.ts';
 
 function assert(cond: unknown, msg: string) {
   if (!cond) throw new Error(msg);
@@ -41,5 +44,18 @@ assert(kept.status === 'hot' && kept.decision.verdict === 'hot', 'ingest keeps S
 
 assert(standingBrief({ hot: 20, help: 4, interview: 2, applied: 3 }).includes('careers-loop'), 'oral brief');
 assert(decide({ title: 'RN Unit Manager' }).verdict === 'reject', 'rn');
+assert(decide({ title: 'Weird Niche Role' }, { extraDeny: ['weird niche'] }).verdict === 'reject', 'thumbs-down denylist');
+assert(detectVideoAsk('Please submit a video intro on HireVue'), 'video');
+assert(!detectVideoAsk('Write about SEO and AEO'), 'no video');
+assert(followUpDraft({ status: 'interview', company: 'Acme', title: 'SEO Director' }).includes('Acme'), 'followup');
+const rss = jobsFromRss('<rss><channel><item><title>SEO Director</title><link>https://x.test/1</link><description>AEO and PPC</description></item></channel></rss>');
+assert(rss[0].title === 'SEO Director', 'rss');
+const videoJob = await prepareRow({
+  title: 'SEO Director',
+  description: 'Upload a video interview via HireVue',
+  url: 'https://boards.greenhouse.io/z/jobs/1',
+  location: 'Remote',
+});
+assert(videoJob.method === 'manual_packet' && videoJob.packet_notes === 'video-required', 'video method');
 
 console.log('Unit checks passed.');

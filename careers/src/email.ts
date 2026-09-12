@@ -46,3 +46,16 @@ export function classifyInbound(subject: string, text: string): { status?: strin
   }
   return { kind: 'inbound-other' };
 }
+
+export async function sendDigestMail(
+  env: { MAIL_WEBHOOK_URL?: string; NOTIFY_EMAIL?: string },
+  payload: { to: string; subject: string; text: string; html: string },
+): Promise<{ sent: boolean; via: string }> {
+  if (!env.MAIL_WEBHOOK_URL) return { sent: false, via: 'stored-only' };
+  const res = await fetch(env.MAIL_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return { sent: res.ok, via: 'webhook' };
+}

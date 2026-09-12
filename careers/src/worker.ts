@@ -2,12 +2,14 @@ import { DEFAULT_PROFILE } from './profile.ts';
 import { jobId, atsDomain } from './ids.ts';
 import { prepareRow, type IncomingJob } from './search/ingest.ts';
 import { planSearch, kickSearch } from './search/run.ts';
-import { digestHtml, digestText, classifyInbound, type HotJob } from './email.ts';
+import { digestHtml, digestText, classifyInbound, sendDigestMail, type HotJob } from './email.ts';
 import { remember, reportOral, standingBrief } from './oral.ts';
 import { PROBE_PERSONA, suggestMethod } from './apply/atlas.ts';
 import { fillDocs } from './apply/packet.ts';
 import { snapshotPacket } from './artifacts.ts';
 import { applyPage, boardPage, layout, loginPage, searchPage } from './ui.ts';
+import { followUpDraft } from './apply/followup.ts';
+import { jobsFromRss } from './search/rss.ts';
 
 export interface Env {
   DB: D1Database;
@@ -24,6 +26,7 @@ export interface Env {
   CF_ARTIFACTS_NAMESPACE?: string;
   BROWSER?: Fetcher;
   ASSETS?: Fetcher;
+  MAIL_WEBHOOK_URL?: string;
 }
 
 const COOKIE = 'oc_auth';
@@ -72,16 +75,21 @@ async function event(env: Env, jobIdValue: string | null, kind: string, detail: 
     .run();
 }
 
+async function extraDeny(env: Env): Promise<string[]> {
+  const { results } = await env.DB.prepare('SELECT pattern FROM denylist').all<{ pattern: string }>();
+  return (results || []).map((r) => r.pattern).filter(Boolean);
+}
+
 async function upsertJob(env: Env, job: IncomingJob) {
   const domain = atsDomain(job.url || '');
   const atlas = domain
     ? await env.DB.prepare('SELECT last_good_method, last_result FROM atlas WHERE domain = ?').bind(domain).first<{ last_good_method: string; last_result: string }>()
     : null;
-  const row = await prepareRow(job, atlas);
+  const row = await prepareRow(job, atlas, { extraDeny: await extraDeny(env) });
   const now = new Date().toISOString();
   await env.DB.prepare(
-    `INSERT INTO jobs (id,url,title,company,location,source,description,gate0,gate1,loc_label,score,verdict,method,status,resume_md,cover_md,created_at,updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `INSERT INTO jobs (id,url,title,company,location,source,description,gate0,gate1,loc_label,score,verdict,method,status,resume_md,cover_md,packet_notes,created_at,updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
      ON CONFLICT(id) DO UPDATE SET
        title=excluded.title, company=excluded.company, location=excluded.location,
        description=excluded.description, gate0=excluded.gate0, gate1=excluded.gate1,
@@ -89,6 +97,7 @@ async function upsertJob(env: Env, job: IncomingJob) {
        method=excluded.method, status=CASE WHEN jobs.status IN ('applied','interview','offer','queued') THEN jobs.status ELSE excluded.status END,
        resume_md=COALESCE(jobs.resume_md, excluded.resume_md),
        cover_md=COALESCE(jobs.cover_md, excluded.cover_md),
+       packet_notes=excluded.packet_notes,
        updated_at=excluded.updated_at`,
   )
     .bind(
@@ -108,6 +117,7 @@ async function upsertJob(env: Env, job: IncomingJob) {
       row.status,
       row.resume_md,
       row.cover_md,
+      row.packet_notes,
       now,
       now,
     )
@@ -160,6 +170,20 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     }
     await event(env, null, 'ingest', `kept=${kept} dropped=${dropped}`);
     return json({ success: true, kept, dropped, ids });
+  }
+
+  if (p === '/api/ingest/rss' && method === 'POST') {
+    const body = await readBody(request);
+    const xml = String(body.xml || body.rss || '');
+    const incoming = jobsFromRss(xml, body.source || 'rss');
+    let kept = 0;
+    let dropped = 0;
+    for (const job of incoming) {
+      const r = await upsertJob(env, job);
+      if (r.verdict === 'reject') dropped += 1;
+      else kept += 1;
+    }
+    return json({ success: true, kept, dropped, total: incoming.length });
   }
 
   if (p === '/api/jobs' && method === 'GET') {
@@ -331,7 +355,7 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     if (!job || job.verdict === 'reject' || job.status === 'dropped') {
       return new Response(layout('Not found', '<p>Job not on the apply board.</p>'), { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
-    return new Response(applyPage(job), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    return new Response(applyPage(job, followUpDraft(job)), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   if (url.pathname === '/apply' || url.pathname === '/') {
     const jobs = await hotJobs(env, DEFAULT_PROFILE.hot_limit);
@@ -344,6 +368,9 @@ async function sendDigest(env: Env, origin: string) {
   const profile = DEFAULT_PROFILE;
   const jobs = (await hotJobs(env, profile.hot_limit)) as HotJob[];
   const text = digestText(profile, jobs, origin);
+  const html = digestHtml(profile, jobs, origin);
+  const to = env.NOTIFY_EMAIL || profile.notify_email;
+  const mailed = await sendDigestMail(env, { to, subject: `Open Careers — ${jobs.length} hot ops`, text, html });
   await remember(env, text);
   await reportOral(
     env,
@@ -354,8 +381,8 @@ async function sendDigest(env: Env, origin: string) {
       applied: 0,
     }),
   );
-  await event(env, null, 'digest', `${jobs.length} jobs`);
-  return { to: env.NOTIFY_EMAIL || profile.notify_email, text, count: jobs.length };
+  await event(env, null, 'digest', `${jobs.length} jobs sent=${mailed.sent} via=${mailed.via}`);
+  return { to, text, count: jobs.length, mailed };
 }
 
 export default {

@@ -68,17 +68,19 @@ export function boardPage(jobs: any[], extra = '') {
   );
 }
 
-export function applyPage(job: any) {
+export function applyPage(job: any, followUp = '') {
   const help = job.method === 'needs_you' || job.method === 'unknown';
+  const video = job.packet_notes === 'video-required' || job.method === 'manual_packet';
   return layout(
     `${job.title} — apply`,
     `<p class="muted"><a href="/">← board</a></p>
     <div class="card hot">
-      <span class="badge ${help ? 'help' : 'ready'}">${help ? 'HELP / captcha' : 'READY'}</span>
+      <span class="badge ${help || video ? 'help' : 'ready'}">${video ? 'VIDEO / PACKET' : help ? 'HELP / captcha' : 'READY'}</span>
       <span class="badge">${esc(job.method)} · ${esc(job.status)} · ${esc(job.score)}</span>
       <h2 style="margin:8px 0;color:#fff">${esc(job.title)}</h2>
       <p class="muted">${esc(job.company)} · ${esc(job.location)}</p>
       ${job.url ? `<p><a href="${esc(job.url)}" target="_blank" rel="noopener">View original →</a></p>` : ''}
+      ${video ? '<p class="muted">This listing wants a video or custom essay. Download the packet, record, then the agent continues.</p>' : ''}
       <div class="row">
         <form method="post" action="/api/jobs/${esc(job.id)}/thumb"><button class="btn" name="vote" value="down">Thumbs down (never again)</button></form>
         <form method="post" action="/api/jobs/${esc(job.id)}/probe"><button class="btn">Probe ATS (fake persona)</button></form>
@@ -86,6 +88,7 @@ export function applyPage(job: any) {
         <form method="post" action="/api/jobs/${esc(job.id)}/submit"><button class="btn pri">Submit / open watch</button></form>
       </div>
     </div>
+    ${followUp ? `<div class="card"><h3>Follow-up (unsent)</h3><pre>${esc(followUp)}</pre></div>` : ''}
     <div class="card"><h3>Cover</h3><pre>${esc(job.cover_md)}</pre></div>
     <div class="card"><h3>Resume</h3><pre>${esc(job.resume_md)}</pre></div>
     <div class="card"><h3>Listing notes</h3><pre>${esc((job.description || '').slice(0, 2000))}</pre></div>`,

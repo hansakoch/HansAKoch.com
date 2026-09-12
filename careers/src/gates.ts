@@ -117,11 +117,21 @@ export function norm(s: string): string {
     .trim();
 }
 
-export function gate0(job: JobInput): { result: Gate0; reasons: string[] } {
+export type DecideOpts = { extraDeny?: string[] };
+
+export function gate0(job: JobInput, extraDeny: string[] = []): { result: Gate0; reasons: string[] } {
   const title = norm(job.title || '');
   const company = norm(job.company || '');
   const blob = `${title} ${company} ${norm(job.description || '').slice(0, 400)}`;
   const reasons: string[] = [];
+
+  for (const raw of extraDeny) {
+    const p = norm(raw);
+    if (p && (title.includes(p) || blob.includes(p))) {
+      reasons.push(`deny-extra:${p}`);
+      return { result: 'reject', reasons };
+    }
+  }
 
   if (UNIVERSITY.test(blob) && UNI_ROLE.test(title)) {
     reasons.push('university-admin');
@@ -205,8 +215,8 @@ export function gate2(location: string): { locScore: number; locLabel: string } 
   return { locScore: 4, locLabel: 'elsewhere' };
 }
 
-export function decide(job: JobInput): Decision {
-  const g0 = gate0(job);
+export function decide(job: JobInput, opts: DecideOpts = {}): Decision {
+  const g0 = gate0(job, opts.extraDeny);
   const g1 = gate1(job, g0.result);
   const loc = gate2(job.location || '');
   const reasons = [...g0.reasons, ...g1.reasons];

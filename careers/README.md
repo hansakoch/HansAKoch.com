@@ -48,7 +48,17 @@ POST matches to `/api/ingest`:
 { "password": "…", "jobs": [{ "title": "SEO Director", "company": "X", "url": "https://…", "location": "Remote", "description": "…" }] }
 ```
 
-Set `SEARCH_WEBHOOK_URL` so cron kicks your JobSpy box.
+Set `SEARCH_WEBHOOK_URL` so cron kicks your JobSpy box. On Vultr:
+
+```bash
+export CAREERS_INGEST_URL=https://careers.hansakoch.com/api/ingest
+export CAREERS_PASSWORD=...
+python3 scripts/jobspy-ingest.py
+```
+
+RSS feeds: `POST /api/ingest/rss` with `{ "xml": "..." }`.
+
+Daily digest posts to `MAIL_WEBHOOK_URL` when set (Basin/MailChannels/etc.) and always stores the packet in Agent Memory.
 
 ## ORAL
 
