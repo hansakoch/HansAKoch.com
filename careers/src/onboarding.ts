@@ -7,28 +7,28 @@ export type OnboardingItem = {
 export const ONBOARDING_ITEMS: OnboardingItem[] = [
   {
     key: 'linkedin_logged_in',
-    label: 'LinkedIn + Indeed logged in (human session)',
-    detail: 'Log into LinkedIn and Indeed in the headed browser on Vultr VNC. Never reuse Hans cookies for probe runs.',
+    label: '1. LinkedIn + Indeed logged in on Vultr VNC',
+    detail: 'Open VNC → Chromium → log in once. Mark done only when both sessions work.',
   },
   {
     key: 'resume_packets',
-    label: '2–3 resume packets in vault paths',
-    detail: 'Copyable Vultr paths (monospace on /onboarding): ~/.vault/resume_vault/seo-aeo.md, ~/.vault/resume_vault/ai-enablement.md, ~/.vault/resume_vault/webmaster.md — on Vultr only, not clickable from CF Worker.',
+    label: '2. Resume packets exist on Vultr',
+    detail: 'Agent uses the vault. You do not open paths from this page. Mark done if packets already exist.',
   },
   {
     key: 'address_notes',
-    label: 'Plivo / Wayne MI address on file',
-    detail: 'ATS forms use Wayne, MI + Plivo SMS. Cebu PH is home base; USA remote listings use Vultr+VPN at submit time.',
+    label: '3. Wayne MI + Plivo ready for forms',
+    detail: 'ATS address = Wayne MI. SMS = Plivo. Mark done when those are set.',
   },
   {
     key: 'vpn_submit',
-    label: 'USA-from-PH submit lane ready',
-    detail: 'Indeed and geo-blocked ATS: Vultr + hide.me VPN headed browser. Watch VNC during submit — not home IP.',
+    label: '4. hide.me VPN works on Vultr',
+    detail: 'Indeed/USA submits: VNC + VPN on. Never Cebu home IP. Mark done after one VPN check.',
   },
   {
     key: 'probe_persona',
-    label: 'Probe persona isolated from Hans',
-    detail: 'Probe ATS uses throwaway persona (Joe Logan). Hans identity only after approve → watched submit.',
+    label: '5. Probe = Joe Logan (not Hans)',
+    detail: 'Probes never use your cookies. Real apply only after Approve packet.',
   },
 ];
 

@@ -86,6 +86,7 @@ export function applyPage(job: any, followUp = '', flash = '') {
     `${job.title} — apply`,
     `<p class="muted"><a href="/">← board</a> · <a href="/onboarding">Onboarding checklist</a></p>
     ${flash ? `<div class="card" style="border-color:#4ade80"><p>${esc(flash)}</p></div>` : ''}
+    <div class="card" style="border-color:#38bdf8"><p><strong>Which browser?</strong> ${job.method === 'vultr_vpn' ? 'Vultr VNC + VPN Chromium only (not Omarchy / home IP).' : job.method === 'cf_browser' ? 'CF Browser Live View.' : 'See watch box after Submit.'}</p></div>
     <div class="card hot">
       <span class="badge ${help || video ? 'help' : 'ready'}">${video ? 'VIDEO / PACKET' : help ? 'HELP / captcha' : 'READY'}</span>
       <span class="badge ${approved ? 'ready' : 'drop'}">${approved ? 'APPROVED' : 'DRAFT'}</span>
@@ -119,7 +120,7 @@ function watchInstructions(job: any): string {
     return 'CF Browser Run session — watch Live View. Hans lane only after probe atlas confirms method.';
   }
   if (method === 'vultr_vpn') {
-    return 'Vultr + hide.me/VPN headed browser. Watch VNC. Do not use home IP (Cebu). Logged-in Indeed/LinkedIn session required.';
+    return 'DO THIS ON VULTR VNC (not Omarchy Chrome, not home IP):\n1) Open VNC → Chromium\n2) Turn on hide.me VPN\n3) Use logged-in Indeed/LinkedIn\n4) Submit this packet\n5) Close Chromium when done (save RAM)\nApply queue = same job; VNC is only the browser that must click Submit.';
   }
   if (method === 'manual_packet') {
     return 'Download resume/cover from this page and submit yourself (HireVue/video/essay). Agent parses inbound mail for status.';
@@ -142,13 +143,9 @@ export function onboardingPage(items: { key: string; label: string; detail: stri
     .join('');
   return layout(
     'Onboarding — Open Careers',
-    `<p class="muted">${doneCount}/${items.length} complete. Finish before your first watched submit.</p>
+    `<p class="muted">${doneCount}/${items.length} — mark each only when that step is true. Skip vault paths.</p>
     ${rows}
-    <div class="card"><h3>Vault paths (Hans tenant · Vultr)</h3>
-    <p><code class="path" title="file:///home/fansfollow/.vault/resume_vault/seo-aeo.md">~/.vault/resume_vault/seo-aeo.md</code></p>
-    <p><code class="path" title="file:///home/fansfollow/.vault/resume_vault/ai-enablement.md">~/.vault/resume_vault/ai-enablement.md</code></p>
-    <p><code class="path" title="file:///home/fansfollow/.vault/resume_vault/webmaster.md">~/.vault/resume_vault/webmaster.md</code></p>
-    <p class="vault-note">These live on Vultr under <code class="path">~/.vault/...</code> (file:// hints in the title attribute). They are not clickable from this CF Worker page — select/copy the monospace path and open on the server.</p></div>`,
+    <div class="card"><p class="muted">Vault lives on Vultr for agents. You only watch VNC + approve packets here.</p></div>`,
   );
 }
 
