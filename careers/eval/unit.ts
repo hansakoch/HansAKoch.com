@@ -9,6 +9,9 @@ import { decide } from '../src/gates.ts';
 import { detectVideoAsk } from '../src/apply/video.ts';
 import { followUpDraft } from '../src/apply/followup.ts';
 import { jobsFromRss } from '../src/search/rss.ts';
+import { parseJobFromEmail, EMAIL_ARCHIVE_NOTE } from '../src/search/email-ingest.ts';
+import { ONBOARDING_ITEMS } from '../src/onboarding.ts';
+import { fillDocs } from '../src/apply/packet.ts';
 
 function assert(cond: unknown, msg: string) {
   if (!cond) throw new Error(msg);
@@ -44,6 +47,12 @@ assert(kept.status === 'hot' && kept.decision.verdict === 'hot', 'ingest keeps S
 
 assert(standingBrief({ hot: 20, help: 4, interview: 2, applied: 3 }).includes('careers-loop'), 'oral brief');
 assert(decide({ title: 'RN Unit Manager' }).verdict === 'reject', 'rn');
+assert(decide({ title: 'Software Engineer' }).verdict === 'reject', 'swe reject');
+assert(decide({ title: 'Senior Software Engineer Guest Acquisition' }).verdict === 'reject', 'swe guest');
+assert(decide({ title: 'Product Manager' }).verdict === 'reject', 'pm reject');
+assert(decide({ title: 'Content Marketing Manager', description: 'Social and brand voice.' }).verdict === 'reject', 'content reject');
+assert(decide({ title: 'Communications Director' }).verdict === 'reject', 'comms reject');
+assert(decide({ title: 'SEO Software Engineer' }).verdict !== 'reject', 'seo swe rescued');
 assert(decide({ title: 'Weird Niche Role' }, { extraDeny: ['weird niche'] }).verdict === 'reject', 'thumbs-down denylist');
 assert(detectVideoAsk('Please submit a video intro on HireVue'), 'video');
 assert(!detectVideoAsk('Write about SEO and AEO'), 'no video');
@@ -57,5 +66,26 @@ const videoJob = await prepareRow({
   location: 'Remote',
 });
 assert(videoJob.method === 'manual_packet' && videoJob.packet_notes === 'video-required', 'video method');
+
+const emailJob = parseJobFromEmail(
+  'Fwd: SEO Director at Acme',
+  'Great role. Apply here: https://boards.greenhouse.io/acme/jobs/123\nRemote SEO AEO PPC',
+  'jobs@linkedin.com',
+);
+assert(emailJob?.title && emailJob.source === 'email', 'email parse');
+assert(EMAIL_ARCHIVE_NOTE.includes('archive'), 'archive note');
+assert(ONBOARDING_ITEMS.length >= 5, 'onboarding items');
+
+const goldHot = {
+  title: 'SEO Director',
+  company: 'AI SaaS',
+  url: 'https://boards.greenhouse.io/acme/jobs/1',
+  location: 'Remote',
+  description: 'Own SEO, AEO, and organic search. No quota.',
+};
+const goldDecision = decide(goldHot);
+assert(goldDecision.verdict === 'hot', 'gold hot verdict');
+const packet = fillDocs(goldHot);
+assert(packet.resume_md.includes('SEO Director') && packet.cover_md.includes('Hans'), 'gold packet');
 
 console.log('Unit checks passed.');

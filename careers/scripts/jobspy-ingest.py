@@ -73,7 +73,15 @@ def main():
     jobs = scrape()
     print(f"scraped={len(jobs)}", flush=True)
     body = json.dumps({"password": password, "jobs": jobs}).encode()
-    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json", "User-Agent": "OpenCareers-JobSpy/1.0", "X-Careers-Password": password})
+    req = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": "OpenCareers-JobSpy/1.0",
+            "X-Careers-Password": password,
+        },
+    )
     with urllib.request.urlopen(req) as resp:
         print(resp.read().decode())
 

@@ -7,9 +7,11 @@ import { remember, reportOral, standingBrief } from './oral.ts';
 import { PROBE_PERSONA, suggestMethod } from './apply/atlas.ts';
 import { fillDocs } from './apply/packet.ts';
 import { snapshotPacket } from './artifacts.ts';
-import { applyPage, boardPage, layout, loginPage, searchPage } from './ui.ts';
+import { applyPage, boardPage, layout, loginPage, onboardingPage, searchPage } from './ui.ts';
 import { followUpDraft } from './apply/followup.ts';
 import { jobsFromRss } from './search/rss.ts';
+import { parseJobFromEmail, EMAIL_ARCHIVE_NOTE } from './search/email-ingest.ts';
+import { ONBOARDING_ITEMS, ensureOnboardingRows, getOnboardingState, setOnboardingDone } from './onboarding.ts';
 
 export interface Env {
   DB: D1Database;
@@ -39,7 +41,7 @@ function deny() {
   return json({ success: false, error: 'auth' }, 401);
 }
 
-function authed(request: Request, env: Env): boolean {
+function authed(request: Request, env: Env, bodyPassword?: string): boolean {
   const want = env.CAREERS_PASSWORD || '';
   if (!want) return true;
   const cookie = request.headers.get('Cookie') || '';
@@ -48,7 +50,14 @@ function authed(request: Request, env: Env): boolean {
   if (header === want) return true;
   const url = new URL(request.url);
   if (url.searchParams.get('password') === want) return true;
+  if (bodyPassword && bodyPassword === want) return true;
   return false;
+}
+
+function wantsHtmlRedirect(request: Request): boolean {
+  const ct = request.headers.get('Content-Type') || '';
+  const accept = request.headers.get('Accept') || '';
+  return ct.includes('form') || accept.includes('text/html');
 }
 
 async function readBody(request: Request): Promise<any> {
@@ -80,12 +89,15 @@ async function extraDeny(env: Env): Promise<string[]> {
   return (results || []).map((r) => r.pattern).filter(Boolean);
 }
 
-async function upsertJob(env: Env, job: IncomingJob) {
+async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: string } = {}) {
   const domain = atsDomain(job.url || '');
   const atlas = domain
     ? await env.DB.prepare('SELECT last_good_method, last_result FROM atlas WHERE domain = ?').bind(domain).first<{ last_good_method: string; last_result: string }>()
     : null;
   const row = await prepareRow(job, atlas, { extraDeny: await extraDeny(env) });
+  let status = row.status;
+  if (opts.statusOverride) status = opts.statusOverride;
+  else if (job.source === 'email' && row.decision.verdict !== 'reject') status = 'reviewed';
   const now = new Date().toISOString();
   await env.DB.prepare(
     `INSERT INTO jobs (id,url,title,company,location,source,description,gate0,gate1,loc_label,score,verdict,method,status,resume_md,cover_md,packet_notes,created_at,updated_at)
@@ -114,7 +126,7 @@ async function upsertJob(env: Env, job: IncomingJob) {
       row.decision.score,
       row.decision.verdict,
       row.method,
-      row.status,
+      status,
       row.resume_md,
       row.cover_md,
       row.packet_notes,
@@ -122,7 +134,37 @@ async function upsertJob(env: Env, job: IncomingJob) {
       now,
     )
     .run();
-  return { id: row.id, verdict: row.decision.verdict, status: row.status, score: row.decision.score };
+  return { id: row.id, verdict: row.decision.verdict, status, score: row.decision.score };
+}
+
+function submitWatch(method: string, env: Env): { watch: string; nextStatus: string } {
+  if (method === 'needs_you' || method === 'unknown') {
+    return {
+      nextStatus: 'needs_you',
+      watch: 'Open this listing on VNC / Omarchy / Browser Live View. Agent continues after captcha.',
+    };
+  }
+  if (method === 'cf_browser') {
+    return {
+      nextStatus: 'queued',
+      watch: env.BROWSER
+        ? 'CF Browser Run session — watch Live View. Hans lane only after probe atlas.'
+        : 'CF Browser not bound; falling back to Vultr VNC watch.',
+    };
+  }
+  if (method === 'vultr_vpn') {
+    return {
+      nextStatus: 'queued',
+      watch: 'Vultr + hide.me/VPN headed browser. Watch VNC. Do not use home IP.',
+    };
+  }
+  if (method === 'manual_packet') {
+    return {
+      nextStatus: 'manual_packet',
+      watch: 'Download resume/cover from this page and submit yourself. Agent will parse inbound mail.',
+    };
+  }
+  return { nextStatus: 'queued', watch: 'Watch the apply session and confirm submission.' };
 }
 
 async function hotJobs(env: Env, limit: number) {
@@ -151,12 +193,35 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     });
   }
 
-  if (p === '/api/health') return json({ ok: true, product: 'open-careers' });
-
-  if (!authed(request, env) && p.startsWith('/api/')) return deny();
+  if (p === '/api/health') {
+    const webhook = env.SEARCH_WEBHOOK_URL || '';
+    let webhookHost = '';
+    try {
+      webhookHost = webhook ? new URL(webhook).host : '';
+    } catch {
+      webhookHost = 'invalid-url';
+    }
+    return json({
+      ok: true,
+      product: 'open-careers',
+      cron: '0 8 * * *',
+      search_webhook: {
+        configured: !!webhook,
+        host: webhookHost || null,
+        destination: '/api/ingest',
+      },
+      ingest: {
+        jobspy: '/api/ingest',
+        rss: '/api/ingest/rss',
+        email: '/api/ingest/email',
+      },
+      d1: !!env.DB,
+    });
+  }
 
   if (p === '/api/ingest' && method === 'POST') {
     const body = await readBody(request);
+    if (!authed(request, env, String(body.password || ''))) return deny();
     const incoming: IncomingJob[] = Array.isArray(body.jobs) ? body.jobs : [];
     let kept = 0;
     let dropped = 0;
@@ -171,6 +236,28 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     await event(env, null, 'ingest', `kept=${kept} dropped=${dropped}`);
     return json({ success: true, kept, dropped, ids });
   }
+
+  if (p === '/api/ingest/email' && method === 'POST') {
+    const body = await readBody(request);
+    if (!authed(request, env, String(body.password || ''))) return deny();
+    const subject = String(body.subject || '');
+    const text = String(body.body || body.text || '');
+    const from = String(body.from || '');
+    const parsed = parseJobFromEmail(subject, text, from);
+    if (!parsed) return json({ success: false, error: 'not a job email', archive: EMAIL_ARCHIVE_NOTE }, 422);
+    const final = await upsertJob(env, parsed);
+    await event(env, final.id, 'ingest-email', subject.slice(0, 200));
+    return json({
+      success: true,
+      id: final.id,
+      verdict: final.verdict,
+      status: final.status,
+      archive: EMAIL_ARCHIVE_NOTE,
+      job: parsed,
+    });
+  }
+
+  if (!authed(request, env) && p.startsWith('/api/')) return deny();
 
   if (p === '/api/ingest/rss' && method === 'POST') {
     const body = await readBody(request);
@@ -245,14 +332,18 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
         .bind(suggestMethod(job.url || '', { last_good_method: method, last_result: result }), 'probing', now, id)
         .run();
       await event(env, id, 'probe', notes);
-      return json({
+      const payload = {
         success: true,
         persona: PROBE_PERSONA,
         domain,
         method,
         result,
         hansIdentityUsed: false,
-      });
+      };
+      if (wantsHtmlRedirect(request)) {
+        return Response.redirect(new URL(`/apply/${id}?probed=1`, url).toString(), 302);
+      }
+      return json(payload);
     }
 
     if (action === 'approve') {
@@ -266,26 +357,20 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     }
 
     if (action === 'submit') {
-      if (!job.approved) return json({ success: false, error: 'approve packet first' }, 400);
-      const method = job.method || 'needs_you';
-      let watch = '';
-      let nextStatus = 'queued';
-      if (method === 'needs_you' || method === 'unknown') {
-        nextStatus = 'needs_you';
-        watch = 'Open this listing on VNC / Omarchy / Browser Live View. Agent continues after captcha.';
-      } else if (method === 'cf_browser') {
-        watch = env.BROWSER
-          ? 'CF Browser Run session — watch Live View. Hans lane only after probe atlas.'
-          : 'CF Browser not bound; falling back to Vultr VNC watch.';
-      } else if (method === 'vultr_vpn') {
-        watch = 'Vultr + hide.me/VPN headed browser. Watch VNC. Do not use home IP.';
-      } else if (method === 'manual_packet') {
-        nextStatus = 'manual_packet';
-        watch = 'Download resume/cover from this page and submit yourself. Agent will parse inbound mail.';
+      if (!job.approved) {
+        if (wantsHtmlRedirect(request)) {
+          return Response.redirect(new URL(`/apply/${id}?error=approve-first`, url).toString(), 302);
+        }
+        return json({ success: false, error: 'approve packet first' }, 400);
       }
+      const method = job.method || 'needs_you';
+      const { watch, nextStatus } = submitWatch(method, env);
       await env.DB.prepare('UPDATE jobs SET status=?, updated_at=? WHERE id=?').bind(nextStatus, now, id).run();
       await event(env, id, 'submit', `${method} ${watch}`);
       await remember(env, `Apply queued ${job.title} @ ${job.company} via ${method}`);
+      if (wantsHtmlRedirect(request)) {
+        return Response.redirect(new URL(`/apply/${id}?submitted=1`, url).toString(), 302);
+      }
       return json({ success: true, method, status: nextStatus, watch, packet: { resume_md: job.resume_md, cover_md: job.cover_md, url: job.url } });
     }
   }
@@ -323,6 +408,23 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     return json({ success: true, atlas: results || [] });
   }
 
+  const onboardingMatch = p.match(/^\/api\/onboarding(?:\/([^/]+))?$/);
+  if (onboardingMatch && method === 'GET' && !onboardingMatch[1]) {
+    await ensureOnboardingRows(env);
+    const state = await getOnboardingState(env.DB);
+    return json({ success: true, items: ONBOARDING_ITEMS.map((i) => ({ ...i, done: state[i.key] })) });
+  }
+  if (onboardingMatch?.[1] && method === 'POST') {
+    const body = await readBody(request);
+    const done = String(body.done ?? '1') === '1';
+    const ok = await setOnboardingDone(env.DB, onboardingMatch[1], done);
+    if (!ok) return json({ success: false, error: 'unknown key' }, 404);
+    if (wantsHtmlRedirect(request)) {
+      return Response.redirect(new URL('/onboarding', url).toString(), 302);
+    }
+    return json({ success: true, key: onboardingMatch[1], done });
+  }
+
   if (p === '/api/stats' && method === 'GET') {
     const hot = await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE verdict='hot' AND status NOT IN ('dropped','thumbs_down')").first<{ n: number }>();
     const help = await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE method IN ('needs_you','unknown') AND verdict!='reject' AND status NOT IN ('dropped','thumbs_down')").first<{ n: number }>();
@@ -358,13 +460,23 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     };
     return new Response(searchPage(DEFAULT_PROFILE.queries, status), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
+  if (url.pathname === '/onboarding') {
+    await ensureOnboardingRows(env);
+    const state = await getOnboardingState(env.DB);
+    const items = ONBOARDING_ITEMS.map((i) => ({ ...i, done: state[i.key] }));
+    return new Response(onboardingPage(items), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  }
   const apply = url.pathname.match(/^\/apply\/([^/]+)$/);
   if (apply) {
     const job = await env.DB.prepare('SELECT * FROM jobs WHERE id = ?').bind(apply[1]).first<any>();
     if (!job || job.verdict === 'reject' || job.status === 'dropped') {
       return new Response(layout('Not found', '<p>Job not on the apply board.</p>'), { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
-    return new Response(applyPage(job, followUpDraft(job)), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    let flash = '';
+    if (url.searchParams.get('submitted') === '1') flash = 'Submit queued — follow watch instructions below.';
+    else if (url.searchParams.get('probed') === '1') flash = 'Probe recorded with throwaway persona. Hans cookies not used.';
+    else if (url.searchParams.get('error') === 'approve-first') flash = 'Approve the packet before submit.';
+    return new Response(applyPage(job, followUpDraft(job), flash), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   if (url.pathname === '/apply' || url.pathname === '/') {
     const jobs = await hotJobs(env, DEFAULT_PROFILE.hot_limit);
@@ -417,6 +529,7 @@ export default {
 
   async email(message: ForwardableEmailMessage, env: Env) {
     const subject = message.headers.get('subject') || '';
+    const from = message.headers.get('from') || '';
     let text = '';
     try {
       text = await new Response(message.raw).text();
@@ -436,6 +549,13 @@ export default {
     const now = new Date().toISOString();
     if (match && classified.status) {
       await env.DB.prepare('UPDATE jobs SET status=?, updated_at=? WHERE id=?').bind(classified.status, now, match.id).run();
+    } else if (!match && classified.kind === 'inbound-other') {
+      const parsed = parseJobFromEmail(subject, text, from);
+      if (parsed) {
+        const ingested = await upsertJob(env, parsed);
+        await event(env, ingested.id, 'ingest-email-inbound', `${subject.slice(0, 120)} | ${EMAIL_ARCHIVE_NOTE}`);
+        await remember(env, `Email job ingested: ${parsed.title} @ ${parsed.company} (${ingested.verdict})`);
+      }
     }
     await event(env, match?.id || null, classified.kind, subject.slice(0, 200));
     await remember(env, `Inbound mail: ${subject} → ${classified.kind} ${match?.title || ''}`);

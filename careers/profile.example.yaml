@@ -4,6 +4,20 @@ email: you@example.com
 notify_email: you@example.com
 hot_limit: 20
 
+# Resume vault paths (local or synced folder — not committed to git)
+resume_vault:
+  seo_aeo: resume_vault/seo-aeo.md
+  ai_enablement: resume_vault/ai-enablement.md
+  webmaster: resume_vault/webmaster.md
+
+# Address notes for ATS forms (example: Wayne MI + Plivo SMS)
+address:
+  city: Wayne
+  state: MI
+  country: US
+  phone: "+1XXXXXXXXXX"
+  home_base: "Cebu, PH — use VPN headed browser for USA-only ATS submit"
+
 priorities:
   families:
     - seo
@@ -36,3 +50,6 @@ queries:
 
 # Extra deny patterns (added to built-in Gate 0)
 deny_extra: []
+
+# Email ingest: forward job alerts to your Worker email route (see README)
+# Archive after review: Gmail label careers/archived
