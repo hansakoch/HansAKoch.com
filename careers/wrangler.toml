@@ -1,0 +1,17 @@
+name = "careers-hansakoch"
+main = "src/worker.ts"
+compatibility_date = "2025-04-01"
+
+[vars]
+# Set CAREERS_PASSWORD as a secret: wrangler secret put CAREERS_PASSWORD
+NOTIFY_EMAIL = "hans@hansakoch.com"
+CF_MEMORY_NAMESPACE = "hermes"
+CF_MEMORY_PROFILE = "careers"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "careers-hak"
+database_id = "6410cd87-5313-4761-8226-aa3a635e249d"
+
+[triggers]
+crons = ["0 8 * * *"]

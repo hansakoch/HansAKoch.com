@@ -1,0 +1,54 @@
+name: Hans Al Koch
+email: hans@hansakoch.com
+notify_email: hans@hansakoch.com
+hot_limit: 20
+
+priorities:
+  families:
+    - seo
+    - aeo
+    - geo
+    - ppc
+    - orm
+    - growth-not-quota
+    - ai-enablement
+    - webmaster
+    - agents
+    - crypto-marketing
+  locations:
+    - remote
+    - ph-timezone
+    - michigan
+    - california
+    - texas
+    - usa
+    - asia
+    - italy
+  salary_filter: false
+
+queries:
+  - { term: "SEO director", location: "remote" }
+  - { term: "SEO director", location: "Michigan" }
+  - { term: "SEO director", location: "California" }
+  - { term: "SEO director", location: "Texas" }
+  - { term: "SEO director", location: "Singapore" }
+  - { term: "SEO director", location: "Italy" }
+  - { term: "AEO", location: "remote" }
+  - { term: "GEO AI search", location: "remote" }
+  - { term: "AI enablement lead", location: "remote" }
+  - { term: "AI enablement", location: "Michigan" }
+  - { term: "PPC director", location: "remote" }
+  - { term: "paid media director", location: "remote" }
+  - { term: "ORM reputation manager", location: "remote" }
+  - { term: "webmaster", location: "remote" }
+  - { term: "webmaster", location: "Philippines" }
+  - { term: "head of organic search", location: "remote" }
+  - { term: "programmatic SEO", location: "remote" }
+  - { term: "growth marketing SEO", location: "remote" }
+  - { term: "AI systems architect", location: "remote" }
+  - { term: "director of agent optimization", location: "remote" }
+  - { term: "crypto SEO", location: "remote" }
+  - { term: "search marketing director", location: "United Kingdom" }
+  - { term: "SEO director", location: "Asia" }
+
+deny_extra: []
