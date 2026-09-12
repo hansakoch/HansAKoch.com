@@ -3,7 +3,7 @@
 Careers is a **mission type**, not a second commander.
 
 - Operator: ORAL (`agent-alfred`)
-- Memory: CF Agent Memory `hermes` / `careers` via Worker HTTP (not cf-memory MCP)
+- Memory: CF Agent Memory `alfred-report` / `careers` via Worker HTTP (not cf-memory MCP)
 - Trust: D1 packets + optional CF Artifacts snapshot on approve (`src/artifacts.ts`)
 - Report: `GET /api/stats` → `brief` string for Alfred
 

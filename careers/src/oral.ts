@@ -5,7 +5,7 @@ export async function remember(env: {
   CF_MEMORY_PROFILE?: string;
 }, content: string) {
   if (!env.CF_ACCOUNT_ID || !env.CF_MEMORY_TOKEN) return { ok: false, skipped: true };
-  const ns = env.CF_MEMORY_NAMESPACE || 'hermes';
+  const ns = env.CF_MEMORY_NAMESPACE || 'alfred-report';
   const profile = env.CF_MEMORY_PROFILE || 'careers';
   const url = `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/agent-memory/namespaces/${ns}/profiles/${profile}/remember`;
   const res = await fetch(url, {

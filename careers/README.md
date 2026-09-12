@@ -110,7 +110,7 @@ Daily digest posts to `MAIL_WEBHOOK_URL` when set (Basin/MailChannels/etc.) and 
 
 ## ORAL
 
-Standing mission name: `careers-loop`. Memory namespace `hermes` / profile `careers`. See `ORAL.md`.
+Standing mission name: `careers-loop`. Memory namespace `alfred-report` / profile `careers`. See `ORAL.md`.
 
 ## Share this folder
 

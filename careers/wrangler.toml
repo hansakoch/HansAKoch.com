@@ -5,7 +5,7 @@ compatibility_date = "2025-04-01"
 [vars]
 # Set CAREERS_PASSWORD as a secret: wrangler secret put CAREERS_PASSWORD
 NOTIFY_EMAIL = "hans@hansakoch.com"
-CF_MEMORY_NAMESPACE = "hermes"
+CF_MEMORY_NAMESPACE = "alfred-report"
 CF_MEMORY_PROFILE = "careers"
 
 [[d1_databases]]
