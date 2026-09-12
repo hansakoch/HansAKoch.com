@@ -4,31 +4,22 @@ export type OnboardingItem = {
   detail: string;
 };
 
+/** Only human-facing clicks. Agent/VPN/vault are automatic — never checklist busywork. */
 export const ONBOARDING_ITEMS: OnboardingItem[] = [
   {
     key: 'linkedin_logged_in',
-    label: '1. LinkedIn + Indeed logged in on Vultr VNC',
-    detail: 'Open VNC → Chromium → log in once. Mark done only when both sessions work.',
+    label: '1. LinkedIn + Indeed logged in (once)',
+    detail: 'Agent opens the headed browser when needed. You only log in if a session expired — then Approve packets as usual.',
   },
   {
-    key: 'resume_packets',
-    label: '2. Resume packets exist on Vultr',
-    detail: 'Agent uses the vault. You do not open paths from this page. Mark done if packets already exist.',
+    key: 'friend_easy_apply',
+    label: '2. Open Careers Easy Apply OK for trusted helper',
+    detail: 'Friend/partner/agent may click Easy Apply on your behalf for good-enough fits. Perfect-fit anxiety is optional.',
   },
   {
     key: 'address_notes',
-    label: '3. Wayne MI + Plivo ready for forms',
-    detail: 'ATS address = Wayne MI. SMS = Plivo. Mark done when those are set.',
-  },
-  {
-    key: 'vpn_submit',
-    label: '4. hide.me VPN works on Vultr',
-    detail: 'Indeed/USA submits: VNC + VPN on. Never Cebu home IP. Mark done after one VPN check.',
-  },
-  {
-    key: 'probe_persona',
-    label: '5. Probe = Joe Logan (not Hans)',
-    detail: 'Probes never use your cookies. Real apply only after Approve packet.',
+    label: '3. Confirm Wayne MI + Plivo for forms',
+    detail: 'Nothing to open. If ATS asks address/SMS: Wayne MI + your Plivo number. Tap done if that is still true.',
   },
 ];
 

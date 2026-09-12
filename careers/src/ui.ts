@@ -145,7 +145,7 @@ export function onboardingPage(items: { key: string; label: string; detail: stri
     'Onboarding — Open Careers',
     `<p class="muted">${doneCount}/${items.length} — mark each only when that step is true. Skip vault paths.</p>
     ${rows}
-    <div class="card"><p class="muted">Vault lives on Vultr for agents. You only watch VNC + approve packets here.</p></div>`,
+    <div class="card"><p class="muted">You approve packets here. Agents handle VPN, probes, vault. CF Secrets Store = master keys (next).</p></div>`,
   );
 }
 
