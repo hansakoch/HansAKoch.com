@@ -410,7 +410,7 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
 
   const onboardingMatch = p.match(/^\/api\/onboarding(?:\/([^/]+))?$/);
   if (onboardingMatch && method === 'GET' && !onboardingMatch[1]) {
-    await ensureOnboardingRows(env);
+    await ensureOnboardingRows(env.DB);
     const state = await getOnboardingState(env.DB);
     return json({ success: true, items: ONBOARDING_ITEMS.map((i) => ({ ...i, done: state[i.key] })) });
   }
@@ -461,7 +461,7 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     return new Response(searchPage(DEFAULT_PROFILE.queries, status), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   if (url.pathname === '/onboarding') {
-    await ensureOnboardingRows(env);
+    await ensureOnboardingRows(env.DB);
     const state = await getOnboardingState(env.DB);
     const items = ONBOARDING_ITEMS.map((i) => ({ ...i, done: state[i.key] }));
     return new Response(onboardingPage(items), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
