@@ -1,0 +1,38 @@
+# Copy to profile.yaml and edit. No secrets in this file.
+name: Your Name
+email: you@example.com
+notify_email: you@example.com
+hot_limit: 20
+
+priorities:
+  families:
+    - seo
+    - aeo
+    - geo
+    - ppc
+    - orm
+    - growth-not-quota
+    - ai-enablement
+    - webmaster
+    - agents
+    - crypto-marketing
+  locations:
+    - remote
+    - ph-timezone
+    - michigan
+    - california
+    - texas
+    - usa
+    - asia
+    - italy
+  salary_filter: false
+
+queries:
+  - { term: "SEO director", location: "remote" }
+  - { term: "AEO lead", location: "remote" }
+  - { term: "AI enablement", location: "remote" }
+  - { term: "PPC director", location: "remote" }
+  - { term: "webmaster", location: "remote" }
+
+# Extra deny patterns (added to built-in Gate 0)
+deny_extra: []
