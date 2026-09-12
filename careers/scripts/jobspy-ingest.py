@@ -57,7 +57,14 @@ def main():
         sys.exit(2)
     jobs = scrape()
     body = json.dumps({"password": password, "jobs": jobs}).encode()
-    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "X-Careers-Password": password,
+        },
+    )
     with urllib.request.urlopen(req) as resp:
         print(resp.read().decode())
 

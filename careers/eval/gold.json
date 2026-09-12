@@ -60,7 +60,20 @@
     { "title": "RN Case Manager", "company": "Health", "location": "Michigan" },
     { "title": "Marketing Manager", "company": "Unknown", "location": "Remote", "description": "Own the outbound sales pipeline, quota, and commission plan. Cold call SMB owners daily." },
     { "title": "Director of Marketing", "company": "Bank", "location": "Detroit, MI", "description": "Lead a team of account executives closing commercial loans. Heavy quota." },
-    { "title": "Growth Lead", "company": "Clinic", "location": "Remote", "description": "This is a hunter role closing deals with a carried quota and commission." }
+    { "title": "Growth Lead", "company": "Clinic", "location": "Remote", "description": "This is a hunter role closing deals with a carried quota and commission." },
+    { "title": "Senior Software Engineer Guest Acquisition", "company": "Travel Co", "location": "Remote" },
+    { "title": "Software Engineer", "company": "SaaS", "location": "Remote" },
+    { "title": "Staff Software Engineer", "company": "Platform", "location": "San Francisco, CA" },
+    { "title": "Product Manager", "company": "App Co", "location": "Remote" },
+    { "title": "Senior Product Manager", "company": "Fintech", "location": "Remote" },
+    { "title": "Program Manager", "company": "Enterprise", "location": "Remote" },
+    { "title": "Content Marketing Manager", "company": "Brand", "location": "Remote", "description": "Own social, brand voice, and editorial calendar." },
+    { "title": "Content Writer", "company": "Publisher", "location": "Remote" },
+    { "title": "Communications Director", "company": "Nonprofit", "location": "Detroit, MI" },
+    { "title": "Communications Manager", "company": "Agency", "location": "Remote" },
+    { "title": "Guest Acquisition Manager", "company": "Hotel", "location": "Remote" },
+    { "title": "Full Stack Engineer", "company": "Startup", "location": "Remote" },
+    { "title": "Backend Engineer", "company": "Infra", "location": "Remote" }
   ],
   "keep": [
     { "title": "SEO Director", "company": "AI SaaS", "location": "Remote" },

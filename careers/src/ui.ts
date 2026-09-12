@@ -24,7 +24,7 @@ pre{white-space:pre-wrap;font-size:12px;color:#ccc;max-height:280px;overflow:aut
 </style></head><body>
 <div class="top"><div class="wrap">
 <h1>Open Careers</h1>
-<p class="muted">${authed ? '<a href="/">Hot board</a> · <a href="/apply">Apply queue</a> · <a href="/search">Search</a>' : 'Private tenant board'}</p>
+<p class="muted">${authed ? '<a href="/">Hot board</a> · <a href="/apply">Apply queue</a> · <a href="/onboarding">Onboarding</a> · <a href="/search">Search</a>' : 'Private tenant board'}</p>
 </div></div>
 <div class="wrap">${body}</div>
 </body></html>`;
@@ -48,8 +48,10 @@ export function boardPage(jobs: any[], extra = '') {
   const cards = jobs
     .map((j) => {
       const help = j.method === 'needs_you' || j.method === 'unknown' || !j.method;
+      const emailReview = j.status === 'reviewed';
       return `<div class="card ${j.verdict === 'hot' ? 'hot' : ''}">
         <div><span class="badge ${help ? 'help' : 'ready'}">${help ? 'HELP' : 'READY'}</span>
+        ${emailReview ? '<span class="badge help">EMAIL</span>' : ''}
         <span class="badge">${esc(j.score)} · ${esc(j.loc_label || '')} · ${esc(j.method || 'unknown')}</span></div>
         <p style="margin:8px 0 4px;color:#fff;font-weight:600">${esc(j.title)}</p>
         <p class="muted">${esc(j.company || 'Unknown')} · ${esc(j.location || '')}</p>
@@ -68,30 +70,78 @@ export function boardPage(jobs: any[], extra = '') {
   );
 }
 
-export function applyPage(job: any, followUp = '') {
+export function applyPage(job: any, followUp = '', flash = '') {
   const help = job.method === 'needs_you' || job.method === 'unknown';
   const video = job.packet_notes === 'video-required' || job.method === 'manual_packet';
+  const approved = !!job.approved;
+  const submitted = ['queued', 'needs_you', 'manual_packet', 'applied'].includes(job.status);
+  const watch = watchInstructions(job);
   return layout(
     `${job.title} — apply`,
-    `<p class="muted"><a href="/">← board</a></p>
+    `<p class="muted"><a href="/">← board</a> · <a href="/onboarding">Onboarding checklist</a></p>
+    ${flash ? `<div class="card" style="border-color:#4ade80"><p>${esc(flash)}</p></div>` : ''}
     <div class="card hot">
       <span class="badge ${help || video ? 'help' : 'ready'}">${video ? 'VIDEO / PACKET' : help ? 'HELP / captcha' : 'READY'}</span>
+      <span class="badge ${approved ? 'ready' : 'drop'}">${approved ? 'APPROVED' : 'DRAFT'}</span>
       <span class="badge">${esc(job.method)} · ${esc(job.status)} · ${esc(job.score)}</span>
       <h2 style="margin:8px 0;color:#fff">${esc(job.title)}</h2>
       <p class="muted">${esc(job.company)} · ${esc(job.location)}</p>
       ${job.url ? `<p><a href="${esc(job.url)}" target="_blank" rel="noopener">View original →</a></p>` : ''}
       ${video ? '<p class="muted">This listing wants a video or custom essay. Download the packet, record, then the agent continues.</p>' : ''}
+      ${submitted && watch ? `<div class="card" style="border-color:#facc15;margin-top:12px"><h3>Watch instructions</h3><pre>${esc(watch)}</pre></div>` : ''}
       <div class="row">
         <form method="post" action="/api/jobs/${esc(job.id)}/thumb"><button class="btn" name="vote" value="down">Thumbs down (never again)</button></form>
         <form method="post" action="/api/jobs/${esc(job.id)}/probe"><button class="btn">Probe ATS (fake persona)</button></form>
-        <form method="post" action="/api/jobs/${esc(job.id)}/approve"><button class="btn">Approve packet</button></form>
-        <form method="post" action="/api/jobs/${esc(job.id)}/submit"><button class="btn pri">Submit / open watch</button></form>
+        <form method="post" action="/api/jobs/${esc(job.id)}/approve"><button class="btn">${approved ? 'Re-approve packet' : 'Approve packet'}</button></form>
+        <form method="post" action="/api/jobs/${esc(job.id)}/submit"><button class="btn pri" ${approved ? '' : 'disabled title="Approve packet first"'}>Submit / open watch</button></form>
       </div>
+      ${!approved ? '<p class="muted" style="margin-top:8px">Approve the resume/cover packet before submit.</p>' : ''}
     </div>
     ${followUp ? `<div class="card"><h3>Follow-up (unsent)</h3><pre>${esc(followUp)}</pre></div>` : ''}
-    <div class="card"><h3>Cover</h3><pre>${esc(job.cover_md)}</pre></div>
-    <div class="card"><h3>Resume</h3><pre>${esc(job.resume_md)}</pre></div>
+    <div class="card"><h3>Cover</h3><pre>${esc(job.cover_md || '(generate on approve)')}</pre></div>
+    <div class="card"><h3>Resume</h3><pre>${esc(job.resume_md || '(generate on approve)')}</pre></div>
     <div class="card"><h3>Listing notes</h3><pre>${esc((job.description || '').slice(0, 2000))}</pre></div>`,
+  );
+}
+
+function watchInstructions(job: any): string {
+  const method = job.method || 'needs_you';
+  if (method === 'needs_you' || method === 'unknown') {
+    return 'Open this listing on VNC / Omarchy / Browser Live View. You handle captcha/login; agent continues after.';
+  }
+  if (method === 'cf_browser') {
+    return 'CF Browser Run session — watch Live View. Hans lane only after probe atlas confirms method.';
+  }
+  if (method === 'vultr_vpn') {
+    return 'Vultr + hide.me/VPN headed browser. Watch VNC. Do not use home IP (Cebu). Logged-in Indeed/LinkedIn session required.';
+  }
+  if (method === 'manual_packet') {
+    return 'Download resume/cover from this page and submit yourself (HireVue/video/essay). Agent parses inbound mail for status.';
+  }
+  return '';
+}
+
+export function onboardingPage(items: { key: string; label: string; detail: string; done: boolean }[]) {
+  const doneCount = items.filter((i) => i.done).length;
+  const rows = items
+    .map(
+      (i) => `<div class="card" style="${i.done ? 'border-color:#4ade80' : ''}">
+      <form method="post" action="/api/onboarding/${esc(i.key)}" style="display:flex;gap:12px;align-items:flex-start">
+        <input type="hidden" name="done" value="${i.done ? '0' : '1'}"/>
+        <button class="btn" type="submit" style="min-width:90px">${i.done ? 'Undo ✓' : 'Mark done'}</button>
+        <div><p style="color:#fff;font-weight:600">${esc(i.label)}</p><p class="muted">${esc(i.detail)}</p></div>
+      </form>
+    </div>`,
+    )
+    .join('');
+  return layout(
+    'Onboarding — Open Careers',
+    `<p class="muted">${doneCount}/${items.length} complete. Finish before your first watched submit.</p>
+    ${rows}
+    <div class="card"><h3>Vault paths (Hans tenant)</h3>
+    <pre class="muted">resume_vault/seo-aeo.md
+resume_vault/ai-enablement.md
+resume_vault/webmaster.md</pre></div>`,
   );
 }
 

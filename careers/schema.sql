@@ -57,3 +57,10 @@ CREATE TABLE IF NOT EXISTS events (
   detail TEXT,
   created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS onboarding (
+  key TEXT PRIMARY KEY,
+  done INTEGER DEFAULT 0,
+  notes TEXT,
+  updated_at TEXT NOT NULL
+);

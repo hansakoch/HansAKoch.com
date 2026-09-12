@@ -53,6 +53,31 @@ const DENY_TITLE: RegExp[] = [
 const UNIVERSITY = /\b(university|college|admissions|academic|campus)\b/;
 const UNI_ROLE = /\b(associate director|assistant director|director|dean|provost)\b/;
 
+/** Pure SWE/PM/content/comms titles — reject unless SEO/search/growth keywords rescue them. */
+const SOFT_DENY: RegExp[] = [
+  /\bsoftware engineer\b/,
+  /\bstaff engineer\b/,
+  /\bprincipal engineer\b/,
+  /\bsenior engineer\b/,
+  /\bbackend engineer\b/,
+  /\bfrontend engineer\b/,
+  /\bfull[- ]stack engineer\b/,
+  /\bplatform engineer\b/,
+  /\bproduct manager\b/,
+  /\bprogram manager\b/,
+  /\bproject manager\b/,
+  /\bcontent (marketing|strategist|writer|manager|lead|director|specialist|coordinator)\b/,
+  /\bcommunications (manager|director|specialist|lead|coordinator|strategist)\b/,
+  /\bguest acquisition\b/,
+  /\bdeveloper advocate\b/,
+  /\bdata engineer\b/,
+  /\bdevops engineer\b/,
+  /\bsre\b/,
+  /\bsite reliability engineer\b/,
+];
+
+const SEO_RESCUE = /\b(seo|aeo|geo|ppc|search|organic|growth marketing|webmaster|ai enablement|paid media|orm|reputation|performance marketing)\b/;
+
 const ALLOW_TITLE: RegExp[] = [
   /\bseo\b/,
   /\baeo\b/,
@@ -154,6 +179,17 @@ export function gate0(job: JobInput, extraDeny: string[] = []): { result: Gate0;
     if (re.test(title)) {
       reasons.push(`allow:${re}`);
       return { result: 'pass', reasons };
+    }
+  }
+
+  for (const re of SOFT_DENY) {
+    if (re.test(title)) {
+      if (SEO_RESCUE.test(title)) {
+        reasons.push(`soft-rescue:${re}`);
+        return { result: 'review', reasons };
+      }
+      reasons.push(`soft-deny:${re}`);
+      return { result: 'reject', reasons };
     }
   }
 
