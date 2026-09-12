@@ -14,6 +14,8 @@ The old board scored Michigan + marketing keywords as 100. Sales interns and RN 
 
 Eval: `npm test` (must stay ≥95% junk reject, ≥80% yes-job keep).
 
+Gate 0 also rejects clearly non-English / foreign-only JDs (e.g. Cyrillic-heavy) unless English SEO/AEO allow keywords are present.
+
 ## Install on Cloudflare
 
 ```bash
@@ -40,7 +42,7 @@ After deploy, open `/onboarding` and complete:
 2. 2–3 resume packets in vault paths (SEO/AEO, AI enablement, webmaster)
 3. Plivo / Wayne MI address notes from profile
 4. USA-from-PH submit lane (Vultr + VPN — not home IP)
-5. Probe persona isolated from Hans (throwaway cookies only)
+5. Probe persona isolated from Hans (Joe Logan throwaway — never Hans cookies)
 
 Progress is stored in D1 (`onboarding` table).
 
@@ -53,7 +55,7 @@ Progress is stored in D1 (`onboarding` table).
 | `needs_you` | LinkedIn/Workday/captcha — you click, agent continues |
 | `manual_packet` | Video or essay — download docs, you upload |
 
-**Probe persona is never Hans.** Probe cookies stay off the Hans lane.
+**Probe persona is never Hans** (throwaway: **Joe Logan** / `joe.logan.probe@example.invalid`). Probe cookies stay off the Hans lane.
 
 ### Phase 1 apply loop (manual watch)
 

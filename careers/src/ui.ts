@@ -21,6 +21,8 @@ h1{font-size:22px;color:#fff} .muted{color:#888;font-size:13px}
 input,textarea{width:100%;background:#0a0a0a;border:1px solid #333;color:#fff;padding:10px;border-radius:6px}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 pre{white-space:pre-wrap;font-size:12px;color:#ccc;max-height:280px;overflow:auto}
+code.path,.path{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#bbf7d0;user-select:all;-webkit-user-select:all;background:#0a0a0a;padding:3px 8px;border-radius:4px;border:1px solid #333;display:inline-block;margin:3px 0;cursor:text}
+.vault-note{margin-top:8px;font-size:12px;color:#888}
 .banner{border-radius:8px;padding:12px 14px;margin:10px 0;border:1px solid #333;font-size:14px}
 .banner.ok{background:#14532d;border-color:#4ade80;color:#bbf7d0}
 .banner.warn{background:#3a3a1a;border-color:#facc15;color:#fde68a}
@@ -142,10 +144,11 @@ export function onboardingPage(items: { key: string; label: string; detail: stri
     'Onboarding — Open Careers',
     `<p class="muted">${doneCount}/${items.length} complete. Finish before your first watched submit.</p>
     ${rows}
-    <div class="card"><h3>Vault paths (Hans tenant)</h3>
-    <pre class="muted">resume_vault/seo-aeo.md
-resume_vault/ai-enablement.md
-resume_vault/webmaster.md</pre></div>`,
+    <div class="card"><h3>Vault paths (Hans tenant · Vultr)</h3>
+    <p><code class="path" title="file:///home/fansfollow/.vault/resume_vault/seo-aeo.md">~/.vault/resume_vault/seo-aeo.md</code></p>
+    <p><code class="path" title="file:///home/fansfollow/.vault/resume_vault/ai-enablement.md">~/.vault/resume_vault/ai-enablement.md</code></p>
+    <p><code class="path" title="file:///home/fansfollow/.vault/resume_vault/webmaster.md">~/.vault/resume_vault/webmaster.md</code></p>
+    <p class="vault-note">These live on Vultr under <code class="path">~/.vault/...</code> (file:// hints in the title attribute). They are not clickable from this CF Worker page — select/copy the monospace path and open on the server.</p></div>`,
   );
 }
 

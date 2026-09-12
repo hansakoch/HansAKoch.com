@@ -23,6 +23,8 @@ assert(classifyInbound('Update', 'Unfortunately we are not moving forward').stat
 assert(classifyInbound('Offer', 'We are pleased to offer you the role').status === 'offer', 'offer');
 
 assert(PROBE_PERSONA.label === 'probe', 'persona');
+assert(PROBE_PERSONA.name === 'Joe Logan', 'probe name Joe Logan');
+assert(/joe\.logan/i.test(PROBE_PERSONA.email), 'probe email joe.logan');
 assert(!/hans/i.test(PROBE_PERSONA.email), 'probe email must not be Hans');
 assert(suggestMethod('https://boards.greenhouse.io/acme/jobs/1') === 'cf_browser', 'greenhouse');
 assert(suggestMethod('https://www.linkedin.com/jobs/view/1') === 'needs_you', 'linkedin help');
@@ -54,6 +56,8 @@ assert(decide({ title: 'Content Marketing Manager', description: 'Social and bra
 assert(decide({ title: 'Communications Director' }).verdict === 'reject', 'comms reject');
 assert(decide({ title: 'SEO Software Engineer' }).verdict !== 'reject', 'seo swe rescued');
 assert(decide({ title: 'Weird Niche Role' }, { extraDeny: ['weird niche'] }).verdict === 'reject', 'thumbs-down denylist');
+assert(decide({ title: 'Менеджер по продажам', description: 'Холодные звонки и план продаж на русском.' }).verdict === 'reject', 'foreign cyrillic reject');
+assert(decide({ title: 'SEO Director / SEOディレクター', description: 'Own SEO, AEO, and organic search across JP/EN markets.' }).verdict !== 'reject', 'multilingual english SEO ok');
 assert(detectVideoAsk('Please submit a video intro on HireVue'), 'video');
 assert(!detectVideoAsk('Write about SEO and AEO'), 'no video');
 assert(followUpDraft({ status: 'interview', company: 'Acme', title: 'SEO Director' }).includes('Acme'), 'followup');

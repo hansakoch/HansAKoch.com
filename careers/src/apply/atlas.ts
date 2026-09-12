@@ -16,8 +16,8 @@ export function suggestMethod(url: string, atlasRow?: { last_good_method?: strin
 
 export const PROBE_PERSONA = {
   label: 'probe',
-  name: 'Alex Rivera',
-  email: 'alex.rivera.probe@example.invalid',
+  name: 'Joe Logan',
+  email: 'joe.logan.probe@example.invalid',
   phone: '+1 000 555 0199',
   note: 'Throwaway probe only. Never Hans identity, never home IP cookies.',
 };

@@ -142,6 +142,65 @@ export function norm(s: string): string {
     .trim();
 }
 
+
+/** Latin letters vs Cyrillic / other letters in raw title+description. */
+export function scriptStats(raw: string): { latin: number; cyrillic: number; otherLetter: number; totalLetter: number } {
+  let latin = 0;
+  let cyrillic = 0;
+  let otherLetter = 0;
+  for (const ch of raw) {
+    const cp = ch.codePointAt(0) || 0;
+    if ((cp >= 0x41 && cp <= 0x5a) || (cp >= 0x61 && cp <= 0x7a) || (cp >= 0xc0 && cp <= 0x024f) || (cp >= 0x1e00 && cp <= 0x1eff)) {
+      latin += 1;
+    } else if (cp >= 0x0400 && cp <= 0x04ff) {
+      cyrillic += 1;
+    } else if (
+      (cp >= 0x3040 && cp <= 0x30ff) || // hiragana/katakana
+      (cp >= 0x3400 && cp <= 0x9fff) || // CJK
+      (cp >= 0xac00 && cp <= 0xd7af) || // Hangul
+      (cp >= 0x0600 && cp <= 0x06ff) || // Arabic
+      (cp >= 0x0590 && cp <= 0x05ff) // Hebrew
+    ) {
+      otherLetter += 1;
+    }
+  }
+  return { latin, cyrillic, otherLetter, totalLetter: latin + cyrillic + otherLetter };
+}
+
+/** Strong English SEO/AEO allow keywords — title first; stray tokens in foreign prose do not count. */
+export function hasEnglishSeoAllow(title: string, description: string): boolean {
+  const titleLatin = norm((title || '').replace(/[^\x00-\x7F]+/g, ' '));
+  for (const re of ALLOW_TITLE) {
+    if (titleLatin && re.test(titleLatin)) return true;
+  }
+  if (titleLatin && SEO_RESCUE.test(titleLatin)) return true;
+  // Description rescue only when there is real English prose (not a lone "SEO" in a Russian JD).
+  const descLatin = (description || '').replace(/[^\x00-\x7F]+/g, ' ');
+  const latinLetters = (descLatin.match(/[A-Za-z]/g) || []).length;
+  if (latinLetters < 40) return false;
+  const blob = norm(`${titleLatin} ${descLatin}`);
+  for (const re of ALLOW_TITLE) {
+    if (re.test(blob)) return true;
+  }
+  return SEO_RESCUE.test(blob);
+}
+
+/**
+ * Clearly non-English JD (Cyrillic-heavy or heavy non-Latin) without English SEO/AEO allow keywords.
+ * Multilingual listings stay OK when the English SEO role is clear.
+ */
+export function isForeignOnlyJd(job: JobInput): boolean {
+  const raw = `${job.title || ''} ${job.description || ''}`.slice(0, 2500);
+  const s = scriptStats(raw);
+  if (s.totalLetter < 10) return false;
+  const nonLatin = s.cyrillic + s.otherLetter;
+  const nonLatinRatio = nonLatin / s.totalLetter;
+  const clearlyForeign = s.cyrillic >= 8 || nonLatinRatio >= 0.45;
+  if (!clearlyForeign) return false;
+  if (hasEnglishSeoAllow(job.title || '', job.description || '')) return false;
+  return true;
+}
+
 export type DecideOpts = { extraDeny?: string[] };
 
 export function gate0(job: JobInput, extraDeny: string[] = []): { result: Gate0; reasons: string[] } {
@@ -149,6 +208,11 @@ export function gate0(job: JobInput, extraDeny: string[] = []): { result: Gate0;
   const company = norm(job.company || '');
   const blob = `${title} ${company} ${norm(job.description || '').slice(0, 400)}`;
   const reasons: string[] = [];
+
+  if (isForeignOnlyJd(job)) {
+    reasons.push('foreign-lang-only');
+    return { result: 'reject', reasons };
+  }
 
   for (const raw of extraDeny) {
     const p = norm(raw);
@@ -256,12 +320,25 @@ export function decide(job: JobInput, opts: DecideOpts = {}): Decision {
   const g1 = gate1(job, g0.result);
   const loc = gate2(job.location || '');
   const reasons = [...g0.reasons, ...g1.reasons];
+  // mutated below for foreign-script demote note
 
   let verdict: Verdict = g1.result;
   if (g0.result === 'reject') verdict = 'reject';
 
   const base = verdict === 'hot' ? 70 : verdict === 'maybe' ? 48 : 10;
-  const score = Math.min(100, base + loc.locScore);
+  let score = Math.min(100, base + loc.locScore);
+  // Foreign-script-heavy but English SEO-clear: keep on board, but do not rank near pure-English SEO tops.
+  if (verdict !== 'reject') {
+    const raw = `${job.title || ''} ${job.description || ''}`.slice(0, 2500);
+    const st = scriptStats(raw);
+    if (st.totalLetter >= 10) {
+      const nonLatinRatio = (st.cyrillic + st.otherLetter) / st.totalLetter;
+      if (st.cyrillic >= 8 || nonLatinRatio >= 0.45) {
+        score = Math.max(0, score - 18);
+        reasons.push('foreign-script-demote');
+      }
+    }
+  }
 
   return {
     gate0: g0.result,

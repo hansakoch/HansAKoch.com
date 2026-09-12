@@ -13,7 +13,7 @@ export const ONBOARDING_ITEMS: OnboardingItem[] = [
   {
     key: 'resume_packets',
     label: '2–3 resume packets in vault paths',
-    detail: 'Vault: SEO/AEO packet, AI enablement packet, webmaster packet (see profile.yaml resume_vault).',
+    detail: 'Copyable Vultr paths (monospace on /onboarding): ~/.vault/resume_vault/seo-aeo.md, ~/.vault/resume_vault/ai-enablement.md, ~/.vault/resume_vault/webmaster.md — on Vultr only, not clickable from CF Worker.',
   },
   {
     key: 'address_notes',
@@ -28,7 +28,7 @@ export const ONBOARDING_ITEMS: OnboardingItem[] = [
   {
     key: 'probe_persona',
     label: 'Probe persona isolated from Hans',
-    detail: 'Probe ATS uses throwaway persona (Alex Rivera). Hans identity only after approve → watched submit.',
+    detail: 'Probe ATS uses throwaway persona (Joe Logan). Hans identity only after approve → watched submit.',
   },
 ];
 

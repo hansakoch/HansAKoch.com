@@ -4,11 +4,11 @@ email: you@example.com
 notify_email: you@example.com
 hot_limit: 20
 
-# Resume vault paths (local or synced folder — not committed to git)
+# Resume vault paths on Vultr (~/.vault/...) — not clickable from CF Worker; not committed to git
 resume_vault:
-  seo_aeo: resume_vault/seo-aeo.md
-  ai_enablement: resume_vault/ai-enablement.md
-  webmaster: resume_vault/webmaster.md
+  seo_aeo: ~/.vault/resume_vault/seo-aeo.md
+  ai_enablement: ~/.vault/resume_vault/ai-enablement.md
+  webmaster: ~/.vault/resume_vault/webmaster.md
 
 # Address notes for ATS forms (example: Wayne MI + Plivo SMS)
 address:
