@@ -382,7 +382,11 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     await event(env, null, 'search-run', JSON.stringify(kicked));
     await reportOral(env, `Search queued via ${kicked.adapter}: ${kicked.detail}`);
     if ((request.headers.get('Content-Type') || '').includes('form')) {
-      return Response.redirect(new URL('/search', url).toString(), 302);
+      const dest = new URL('/search', url);
+      dest.searchParams.set('kicked', kicked.kicked ? '1' : '0');
+      dest.searchParams.set('adapter', kicked.adapter || '');
+      dest.searchParams.set('detail', kicked.detail || '');
+      return Response.redirect(dest.toString(), 302);
     }
     return json({ success: true, plan, kicked });
   }
@@ -449,7 +453,12 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     return new Response(loginPage(), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   if (url.pathname === '/search') {
-    return new Response(searchPage(DEFAULT_PROFILE.queries), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    const status = {
+      kicked: url.searchParams.get('kicked') || undefined,
+      adapter: url.searchParams.get('adapter') || undefined,
+      detail: url.searchParams.get('detail') || undefined,
+    };
+    return new Response(searchPage(DEFAULT_PROFILE.queries, status), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   if (url.pathname === '/onboarding') {
     await ensureOnboardingRows(env);
