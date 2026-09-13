@@ -4,6 +4,8 @@ Cloudflare-installable job hunt: search → Gate 0/1/2 → hot board → probe A
 
 Hans tenant: [careers.hansakoch.com](https://careers.hansakoch.com). Anyone else: copy this folder, set `profile.yaml`, create D1, `wrangler deploy`.
 
+**Resume this project (iPhone / next agent):** read [`AGENT-RESUME.md`](./AGENT-RESUME.md) first. Always work from `origin/main`. Do not resume from stale `alfred.report/open-careers-os-*` checkouts.
+
 ## Why gates exist
 
 The old board scored Michigan + marketing keywords as 100. Sales interns and RN managers leaked. **Nothing is visible** until it survives:
