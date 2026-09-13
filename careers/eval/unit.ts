@@ -13,6 +13,7 @@ import { parseRemoteOk, parseRemotive, looksRelevant } from '../src/search/cf-fe
 import { parseJobFromEmail, EMAIL_ARCHIVE_NOTE } from '../src/search/email-ingest.ts';
 import { ONBOARDING_ITEMS } from '../src/onboarding.ts';
 import { fillDocs } from '../src/apply/packet.ts';
+import { packetRepoName, ARTIFACTS_NAMESPACE, MASTER_REPO } from '../src/artifacts.ts';
 
 function assert(cond: unknown, msg: string) {
   if (!cond) throw new Error(msg);
@@ -108,5 +109,9 @@ const goldDecision = decide(goldHot);
 assert(goldDecision.verdict === 'hot', 'gold hot verdict');
 const packet = fillDocs(goldHot);
 assert(packet.resume_md.includes('SEO Director') && packet.cover_md.includes('Hans'), 'gold packet');
+
+assert(ARTIFACTS_NAMESPACE === 'alfred-command', 'artifacts ns');
+assert(MASTER_REPO === 'open-careers', 'artifacts master repo');
+assert(packetRepoName('abc-123') === 'careers-abc-123', 'packet repo name');
 
 console.log('Unit checks passed.');

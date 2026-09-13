@@ -6,7 +6,7 @@ import { digestHtml, digestText, classifyInbound, sendDigestMail, type HotJob } 
 import { remember, reportOral, standingBrief } from './oral.ts';
 import { PROBE_PERSONA, suggestMethod } from './apply/atlas.ts';
 import { fillDocs } from './apply/packet.ts';
-import { snapshotPacket } from './artifacts.ts';
+import { snapshotPacket, ensureMasterRepo, ARTIFACTS_NAMESPACE, MASTER_REPO, type ArtifactsBinding } from './artifacts.ts';
 import { applyPage, boardPage, layout, loginPage, onboardingPage, searchPage } from './ui.ts';
 import { followUpDraft } from './apply/followup.ts';
 import { jobsFromRss } from './search/rss.ts';
@@ -26,9 +26,11 @@ export interface Env {
   ORAL_TOKEN?: string;
   CF_ARTIFACTS_TOKEN?: string;
   CF_ARTIFACTS_NAMESPACE?: string;
+  ARTIFACTS?: ArtifactsBinding;
   BROWSER?: Fetcher;
   ASSETS?: Fetcher;
   MAIL_WEBHOOK_URL?: string;
+  ARTIFACTS?: ArtifactsBinding;
 }
 
 const COOKIE = 'oc_auth';
@@ -228,6 +230,12 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
         add: '/api/jobs/add',
       },
       apply: { mobile_web: true, mark_applied: '/api/jobs/:id/applied' },
+      artifacts: {
+        bound: !!env.ARTIFACTS,
+        namespace: env.CF_ARTIFACTS_NAMESPACE || ARTIFACTS_NAMESPACE,
+        master: MASTER_REPO,
+        github: 'public-after-tested',
+      },
       d1: !!env.DB,
     });
   }
@@ -289,6 +297,36 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
   if (p === '/api/jobs' && method === 'GET') {
     const jobs = await hotJobs(env, Number(url.searchParams.get('limit') || 20));
     return json({ success: true, jobs });
+  }
+
+  if (p === '/api/artifacts' && method === 'GET') {
+    if (!env.ARTIFACTS) {
+      return json({
+        success: false,
+        bound: false,
+        namespace: ARTIFACTS_NAMESPACE,
+        master: MASTER_REPO,
+        error: 'ARTIFACTS binding missing — deploy wrangler.toml [[artifacts]] on Iceberg',
+      });
+    }
+    try {
+      const { repo, created } = await ensureMasterRepo(env.ARTIFACTS);
+      return json({
+        success: true,
+        bound: true,
+        created,
+        namespace: ARTIFACTS_NAMESPACE,
+        master: repo.name,
+        remote: repo.remote || null,
+        github: 'public-after-tested',
+      });
+    } catch (err) {
+      return json({
+        success: false,
+        bound: true,
+        error: err instanceof Error ? err.message : 'artifacts error',
+      }, 500);
+    }
   }
 
   if (p === '/api/jobs/add' && method === 'POST') {

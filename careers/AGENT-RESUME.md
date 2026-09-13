@@ -91,7 +91,7 @@ Worldwide search. Salary does not matter. Location prior: remote > PH timezone >
 ## What is not done (do not claim)
 
 1. **Deploy this branch** so live health shows `"core":"cloudflare"` and `/search` actually ingest CF feeds. Until wrangler deploy, live still expects JobSpy.
-2. **Real Cloudflare Artifacts.** `src/artifacts.ts` is an optional REST PUT stub. `wrangler.toml` has **no** `[[artifacts]]` binding. D1 is source of truth for packets.
+2. **Cloudflare Artifacts is master git** (`alfred-command` / `open-careers`). Binding is in `wrangler.toml`. Authed `GET /api/artifacts` creates the repo. GitHub is public-after-tested. Mint tokens with TokenMaster on Omarchy: `careers/scripts/tokenmaster-mint.sh` (needs `~/.vault/cloudflare.env`). This cloud pod cannot see TokenMaster.
 3. **Browser Run Live View** — optional, not required for phone apply.
 4. **hansakoch.com ↔ careers tandem** — no public CTA; packets do not publish to `/resume`.
 5. **Apply-loop skill evals** — gate gold exists; packet-voice evals do not. See [Phil Schmid](https://www.philschmid.de/testing-skills).

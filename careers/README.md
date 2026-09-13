@@ -8,6 +8,8 @@ Hans tenant: [careers.hansakoch.com](https://careers.hansakoch.com). Anyone else
 
 **Core = Cloudflare + iPhone web.** Find, score, write, review, and apply work if Omarchy and Vultr are offline. JobSpy / VNC are optional bonuses.
 
+**Git master = Cloudflare Artifacts** (`alfred-command` / `open-careers`). GitHub is the public square after it is tested. See [`ARTIFACTS.md`](./ARTIFACTS.md). TokenMaster mints the CF token (Omarchy vault).
+
 ## Why gates exist
 
 The old board scored Michigan + marketing keywords as 100. Sales interns and RN managers leaked. **Nothing is visible** until it survives:
