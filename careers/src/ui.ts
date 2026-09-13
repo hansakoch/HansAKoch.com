@@ -5,34 +5,48 @@ function esc(s: unknown) {
 export function layout(title: string, body: string, authed = true) {
   return `<!doctype html>
 <html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>${esc(title)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:#0a0a0a;color:#e0e0e0}
-a{color:#ff4444} .wrap{max-width:980px;margin:0 auto;padding:24px}
-.top{background:#111;border-bottom:1px solid #222;padding:16px 24px}
-h1{font-size:22px;color:#fff} .muted{color:#888;font-size:13px}
-.card{background:#141414;border:1px solid #222;border-radius:8px;padding:14px;margin:10px 0}
-.card.hot{border-color:#4ade80} .badge{font-size:10px;padding:2px 8px;border-radius:10px;margin-right:6px}
+body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:#0a0a0a;color:#e0e0e0;-webkit-text-size-adjust:100%}
+a{color:#ff4444} .wrap{max-width:980px;margin:0 auto;padding:16px}
+.top{background:#111;border-bottom:1px solid #222;padding:14px 16px}
+h1{font-size:20px;color:#fff} .muted{color:#888;font-size:14px}
+.card{background:#141414;border:1px solid #222;border-radius:10px;padding:16px;margin:12px 0}
+.card.hot{border-color:#4ade80} .badge{font-size:11px;padding:3px 8px;border-radius:10px;margin-right:6px;display:inline-block}
 .ready{background:#14532d;color:#86efac} .help{background:#3a3a1a;color:#facc15} .drop{background:#3a1a1a;color:#f87171}
-.btn{background:#1a1a1a;border:1px solid #333;color:#ccc;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px}
+.btn{background:#1a1a1a;border:1px solid #333;color:#ccc;padding:12px 16px;border-radius:10px;cursor:pointer;font-size:16px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;line-height:1.2}
 .btn.pri{background:#ff4444;border-color:#ff4444;color:#fff}
-input,textarea{width:100%;background:#0a0a0a;border:1px solid #333;color:#fff;padding:10px;border-radius:6px}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-pre{white-space:pre-wrap;font-size:12px;color:#ccc;max-height:280px;overflow:auto}
-code.path,.path{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#bbf7d0;user-select:all;-webkit-user-select:all;background:#0a0a0a;padding:3px 8px;border-radius:4px;border:1px solid #333;display:inline-block;margin:3px 0;cursor:text}
-.vault-note{margin-top:8px;font-size:12px;color:#888}
-.banner{border-radius:8px;padding:12px 14px;margin:10px 0;border:1px solid #333;font-size:14px}
+.btn:disabled{opacity:.45}
+input,textarea{width:100%;background:#0a0a0a;border:1px solid #333;color:#fff;padding:12px;border-radius:10px;font-size:16px;margin-top:8px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.row .btn{flex:1 1 140px}
+pre{white-space:pre-wrap;font-size:14px;color:#ccc;max-height:320px;overflow:auto;-webkit-user-select:all;user-select:all}
+code.path,.path{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;color:#bbf7d0;user-select:all;-webkit-user-select:all;background:#0a0a0a;padding:3px 8px;border-radius:4px;border:1px solid #333;display:inline-block;margin:3px 0}
+.banner{border-radius:10px;padding:12px 14px;margin:10px 0;border:1px solid #333;font-size:15px}
 .banner.ok{background:#14532d;border-color:#4ade80;color:#bbf7d0}
 .banner.warn{background:#3a3a1a;border-color:#facc15;color:#fde68a}
 .banner.err{background:#3a1a1a;border-color:#f87171;color:#fecaca}
+.nav a{margin-right:10px}
+label{display:block;margin-top:10px;color:#aaa;font-size:13px}
 </style></head><body>
 <div class="top"><div class="wrap">
 <h1>Open Careers</h1>
-<p class="muted">${authed ? '<a href="/">Hot board</a> · <a href="/apply">Apply queue</a> · <a href="/onboarding">Onboarding</a> · <a href="/search">Search</a>' : 'Private tenant board'}</p>
+<p class="muted nav">${authed ? '<a href="/">Hot board</a> · <a href="/apply">Apply</a> · <a href="/onboarding">Onboarding</a> · <a href="/search">Search</a>' : 'Private tenant board'}</p>
 </div></div>
 <div class="wrap">${body}</div>
+<script>
+document.querySelectorAll('[data-copy]').forEach(function(btn){
+  btn.addEventListener('click', async function(){
+    var el = document.getElementById(btn.getAttribute('data-copy'));
+    if (!el) return;
+    try { await navigator.clipboard.writeText(el.innerText); btn.textContent = 'Copied'; }
+    catch (e) { btn.textContent = 'Select text'; }
+  });
+});
+</script>
 </body></html>`;
 }
 
@@ -40,14 +54,29 @@ export function loginPage() {
   return layout(
     'Open Careers',
     `<div class="card">
-      <p class="muted">Password</p>
+      <p class="muted">Password — works on this iPhone. Cloudflare is the core; Vultr/Omarchy optional.</p>
       <form method="post" action="/api/auth" style="margin-top:12px">
-        <input type="password" name="password" autofocus/>
+        <input type="password" name="password" autofocus autocomplete="current-password"/>
         <div class="row"><button class="btn pri" type="submit">Access</button></div>
       </form>
     </div>`,
     false,
   );
+}
+
+function pasteJobForm() {
+  return `<div class="card">
+    <p style="color:#fff;font-weight:600">Paste a job (phone)</p>
+    <p class="muted">Score + write a packet without Vultr. Gates still drop sales/junk.</p>
+    <form method="post" action="/api/jobs/add">
+      <label>Title</label><input name="title" required placeholder="SEO Director"/>
+      <label>Company</label><input name="company" placeholder="Acme"/>
+      <label>URL</label><input name="url" inputmode="url" placeholder="https://boards.greenhouse.io/…"/>
+      <label>Location</label><input name="location" placeholder="Remote"/>
+      <label>Notes / JD</label><textarea name="description" rows="4" placeholder="Paste the listing text"></textarea>
+      <div class="row"><button class="btn pri" type="submit">Score this job</button></div>
+    </form>
+  </div>`;
 }
 
 export function boardPage(jobs: any[], extra = '') {
@@ -58,7 +87,7 @@ export function boardPage(jobs: any[], extra = '') {
       return `<div class="card ${j.verdict === 'hot' ? 'hot' : ''}">
         <div><span class="badge ${help ? 'help' : 'ready'}">${help ? 'HELP' : 'READY'}</span>
         ${emailReview ? '<span class="badge help">EMAIL</span>' : ''}
-        <span class="badge">${esc(j.score)} · ${esc(j.loc_label || '')} · ${esc(j.method || 'unknown')}</span></div>
+        <span class="badge">${esc(j.score)} · ${esc(j.loc_label || '')} · ${esc(j.method || 'mobile_web')}</span></div>
         <p style="margin:8px 0 4px;color:#fff;font-weight:600">${esc(j.title)}</p>
         <p class="muted">${esc(j.company || 'Unknown')} · ${esc(j.location || '')}</p>
         <div class="row">
@@ -70,9 +99,10 @@ export function boardPage(jobs: any[], extra = '') {
     .join('');
   return layout(
     'Hot ops — Open Careers',
-    `<p class="muted">Only jobs that passed Gate 0 + Gate 1. Junk titles never land here.</p>
+    `<p class="muted">Cloudflare core: find → score → write → review → apply on this phone. Omarchy/Vultr offline is fine.</p>
      ${extra}
-     ${cards || '<p class="muted">No hot jobs yet. Run search ingest.</p>'}`,
+     ${cards || '<p class="muted">No hot jobs yet. Tap Search, or paste a listing below.</p>'}
+     ${pasteJobForm()}`,
   );
 }
 
@@ -81,51 +111,59 @@ export function applyPage(job: any, followUp = '', flash = '') {
   const video = job.packet_notes === 'video-required' || job.method === 'manual_packet';
   const approved = !!job.approved;
   const submitted = ['queued', 'needs_you', 'manual_packet', 'applied'].includes(job.status);
+  const applied = job.status === 'applied';
   const watch = watchInstructions(job);
   return layout(
     `${job.title} — apply`,
-    `<p class="muted"><a href="/">← board</a> · <a href="/onboarding">Onboarding checklist</a></p>
-    ${flash ? `<div class="card" style="border-color:#4ade80"><p>${esc(flash)}</p></div>` : ''}
-    <div class="card" style="border-color:#38bdf8"><p><strong>Which browser?</strong> ${job.method === 'vultr_vpn' ? 'Vultr VNC + VPN Chromium only (not Omarchy / home IP).' : job.method === 'cf_browser' ? 'CF Browser Live View.' : 'See watch box after Submit.'}</p></div>
+    `<p class="muted"><a href="/">← board</a> · <a href="/onboarding">Onboarding</a></p>
+    ${flash ? `<div class="banner ok">${esc(flash)}</div>` : ''}
+    <div class="banner warn">Apply on this iPhone. Copy the packet, open the listing, paste, then Mark applied. Vultr/Omarchy not required.</div>
     <div class="card hot">
       <span class="badge ${help || video ? 'help' : 'ready'}">${video ? 'VIDEO / PACKET' : help ? 'HELP / captcha' : 'READY'}</span>
       <span class="badge ${approved ? 'ready' : 'drop'}">${approved ? 'APPROVED' : 'DRAFT'}</span>
+      ${applied ? '<span class="badge ready">APPLIED</span>' : ''}
       <span class="badge">${esc(job.method)} · ${esc(job.status)} · ${esc(job.score)}</span>
       <h2 style="margin:8px 0;color:#fff">${esc(job.title)}</h2>
       <p class="muted">${esc(job.company)} · ${esc(job.location)}</p>
-      ${job.url ? `<p><a href="${esc(job.url)}" target="_blank" rel="noopener">View original →</a></p>` : ''}
-      ${video ? '<p class="muted">This listing wants a video or custom essay. Download the packet, record, then the agent continues.</p>' : ''}
-      ${submitted && watch ? `<div class="card" style="border-color:#facc15;margin-top:12px"><h3>Watch instructions</h3><pre>${esc(watch)}</pre></div>` : ''}
+      ${job.url ? `<div class="row"><a class="btn pri" href="${esc(job.url)}" target="_blank" rel="noopener">Open listing</a></div>` : ''}
+      ${video ? '<p class="muted">Video or essay listing. Copy the packet, record, upload, then Mark applied.</p>' : ''}
+      ${submitted && watch ? `<div class="card" style="border-color:#facc15;margin-top:12px"><h3>On this phone</h3><pre>${esc(watch)}</pre></div>` : ''}
       <div class="row">
-        <form method="post" action="/api/jobs/${esc(job.id)}/thumb"><button class="btn" name="vote" value="down">Thumbs down (never again)</button></form>
-        <form method="post" action="/api/jobs/${esc(job.id)}/probe"><button class="btn">Probe ATS (fake persona)</button></form>
-        <form method="post" action="/api/jobs/${esc(job.id)}/approve"><button class="btn">${approved ? 'Re-approve packet' : 'Approve packet'}</button></form>
-        <form method="post" action="/api/jobs/${esc(job.id)}/submit"><button class="btn pri" ${approved ? '' : 'disabled title="Approve packet first"'}>Submit / open watch</button></form>
+        <form method="post" action="/api/jobs/${esc(job.id)}/approve"><button class="btn pri" type="submit">${approved ? 'Re-write packet' : 'Write + approve packet'}</button></form>
+        <form method="post" action="/api/jobs/${esc(job.id)}/submit"><button class="btn" type="submit" ${approved ? '' : 'disabled title="Approve packet first"'}>Ready to apply</button></form>
+        <form method="post" action="/api/jobs/${esc(job.id)}/applied"><button class="btn" type="submit" ${approved ? '' : 'disabled'}>Mark applied</button></form>
       </div>
-      ${!approved ? '<p class="muted" style="margin-top:8px">Approve the resume/cover packet before submit.</p>' : ''}
+      <div class="row">
+        <form method="post" action="/api/jobs/${esc(job.id)}/thumb"><button class="btn" name="vote" value="down">Thumbs down</button></form>
+        <form method="post" action="/api/jobs/${esc(job.id)}/probe"><button class="btn">Probe note (not Hans)</button></form>
+      </div>
+      ${!approved ? '<p class="muted" style="margin-top:8px">Write + approve first. Then open the listing and paste.</p>' : ''}
     </div>
     ${followUp ? `<div class="card"><h3>Follow-up (unsent)</h3><pre>${esc(followUp)}</pre></div>` : ''}
-    <div class="card"><h3>Cover</h3><pre>${esc(job.cover_md || '(generate on approve)')}</pre></div>
-    <div class="card"><h3>Resume</h3><pre>${esc(job.resume_md || '(generate on approve)')}</pre></div>
+    <div class="card">
+      <div class="row"><h3 style="flex:1">Cover</h3><button type="button" class="btn" data-copy="cover">Copy cover</button></div>
+      <pre id="cover">${esc(job.cover_md || '(approve to generate)')}</pre>
+    </div>
+    <div class="card">
+      <div class="row"><h3 style="flex:1">Resume</h3><button type="button" class="btn" data-copy="resume">Copy resume</button></div>
+      <pre id="resume">${esc(job.resume_md || '(approve to generate)')}</pre>
+    </div>
     <div class="card"><h3>Listing notes</h3><pre>${esc((job.description || '').slice(0, 2000))}</pre></div>`,
   );
 }
 
 function watchInstructions(job: any): string {
-  const method = job.method || 'needs_you';
-  if (method === 'needs_you' || method === 'unknown') {
-    return 'Open this listing on VNC / Omarchy / Browser Live View. You handle captcha/login; agent continues after.';
+  const method = job.method || 'mobile_web';
+  if (method === 'manual_packet') {
+    return 'Copy cover + resume. Open the listing on this phone. Upload the packet / video. Tap Mark applied.';
   }
-  if (method === 'cf_browser') {
-    return 'CF Browser Run session — watch Live View. Hans lane only after probe atlas confirms method.';
+  if (method === 'needs_you') {
+    return 'Open the listing in Safari. Finish login/captcha. Paste the packet. Tap Mark applied.';
   }
   if (method === 'vultr_vpn') {
-    return 'DO THIS ON VULTR VNC (not Omarchy Chrome, not home IP):\n1) Open VNC → Chromium\n2) Turn on hide.me VPN\n3) Use logged-in Indeed/LinkedIn\n4) Submit this packet\n5) Close Chromium when done (save RAM)\nApply queue = same job; VNC is only the browser that must click Submit.';
+    return 'Prefer this phone. If Vultr VNC is up later you can use it — do not wait on it.';
   }
-  if (method === 'manual_packet') {
-    return 'Download resume/cover from this page and submit yourself (HireVue/video/essay). Agent parses inbound mail for status.';
-  }
-  return '';
+  return 'Copy cover + resume → Open listing → paste into the ATS → Mark applied.';
 }
 
 export function onboardingPage(items: { key: string; label: string; detail: string; done: boolean }[]) {
@@ -133,19 +171,19 @@ export function onboardingPage(items: { key: string; label: string; detail: stri
   const rows = items
     .map(
       (i) => `<div class="card" style="${i.done ? 'border-color:#4ade80' : ''}">
-      <form method="post" action="/api/onboarding/${esc(i.key)}" style="display:flex;gap:12px;align-items:flex-start">
+      <form method="post" action="/api/onboarding/${esc(i.key)}">
         <input type="hidden" name="done" value="${i.done ? '0' : '1'}"/>
-        <button class="btn" type="submit" style="min-width:90px">${i.done ? 'Undo ✓' : 'Mark done'}</button>
-        <div><p style="color:#fff;font-weight:600">${esc(i.label)}</p><p class="muted">${esc(i.detail)}</p></div>
+        <p style="color:#fff;font-weight:600">${esc(i.label)}</p>
+        <p class="muted">${esc(i.detail)}</p>
+        <div class="row"><button class="btn" type="submit">${i.done ? 'Undo ✓' : 'Mark done'}</button></div>
       </form>
     </div>`,
     )
     .join('');
   return layout(
     'Onboarding — Open Careers',
-    `<p class="muted">${doneCount}/${items.length} — mark each only when that step is true. Skip vault paths.</p>
-    ${rows}
-    <div class="card"><p class="muted">You approve packets here. Agents handle VPN, probes, vault. CF Secrets Store = master keys (next).</p></div>`,
+    `<p class="muted">${doneCount}/${items.length} — Cloudflare + this phone is the core.</p>
+    ${rows}`,
   );
 }
 
@@ -153,6 +191,8 @@ export type SearchStatus = {
   kicked?: string;
   adapter?: string;
   detail?: string;
+  kept?: string;
+  dropped?: string;
 };
 
 export function searchPage(queries: { term: string; location: string }[], status?: SearchStatus) {
@@ -160,26 +200,26 @@ export function searchPage(queries: { term: string; location: string }[], status
   let banner = '';
   if (status && (status.kicked !== undefined || status.adapter || status.detail)) {
     const kicked = status.kicked === '1' || status.kicked === 'true';
-    const cls = kicked ? 'ok' : status.adapter === 'manual' ? 'warn' : 'err';
+    const cls = kicked ? 'ok' : 'warn';
+    const kept = status.kept ? ` kept=${status.kept}` : '';
+    const dropped = status.dropped ? ` dropped=${status.dropped}` : '';
     const title = kicked
-      ? 'Search kicked — JobSpy webhook accepted the run.'
-      : status.adapter === 'manual'
-        ? 'Search not kicked — no SEARCH_WEBHOOK_URL (manual mode).'
-        : 'Search not kicked — adapter did not start a scrape.';
+      ? `Cloudflare search finished.${kept}${dropped}`
+      : 'Cloudflare feeds returned nothing this run. Paste a job on the board instead.';
     banner = `<div class="banner ${cls}" role="status">
       <strong>${esc(title)}</strong>
-      <p class="muted" style="margin-top:6px;color:inherit;opacity:.9">adapter=<code>${esc(status.adapter || 'unknown')}</code> · kicked=<code>${esc(status.kicked ?? '0')}</code>
+      <p class="muted" style="margin-top:6px;color:inherit;opacity:.9">adapter=<code>${esc(status.adapter || 'cf_feeds')}</code>
       ${status.detail ? ` · ${esc(status.detail)}` : ''}</p>
-      ${!kicked && status.adapter === 'manual' ? '<p style="margin-top:8px">Jobs still land via cron / <code>scripts/jobspy-ingest.py</code> → <code>/api/ingest</code>. Set Worker secret SEARCH_WEBHOOK_URL to make this button fire JobSpy.</p>' : ''}
     </div>`;
   }
   return layout(
     'Search — Open Careers',
     `${banner}
     <div class="card">
-      <p class="muted">Worldwide queries (Gate 0 drops junk before D1 visible rows). Vultr JobSpy posts to <code>/api/ingest</code>. Cron hits SEARCH_WEBHOOK_URL when set; else Browser Run fallback is marked needs_you.</p>
+      <p class="muted">Runs on Cloudflare (RemoteOK, Remotive, Arbeitnow, WWR). JobSpy/Vultr is optional and ignored if offline.</p>
       <ol class="muted">${q}</ol>
-      <form method="post" action="/api/search/run" class="row"><button class="btn pri">Queue search run</button></form>
-    </div>`,
+      <form method="post" action="/api/search/run" class="row"><button class="btn pri">Find jobs on Cloudflare</button></form>
+    </div>
+    ${pasteJobForm()}`,
   );
 }

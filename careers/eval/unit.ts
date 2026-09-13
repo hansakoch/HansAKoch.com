@@ -9,6 +9,7 @@ import { decide } from '../src/gates.ts';
 import { detectVideoAsk } from '../src/apply/video.ts';
 import { followUpDraft } from '../src/apply/followup.ts';
 import { jobsFromRss } from '../src/search/rss.ts';
+import { parseRemoteOk, parseRemotive, looksRelevant } from '../src/search/cf-feeds.ts';
 import { parseJobFromEmail, EMAIL_ARCHIVE_NOTE } from '../src/search/email-ingest.ts';
 import { ONBOARDING_ITEMS } from '../src/onboarding.ts';
 import { fillDocs } from '../src/apply/packet.ts';
@@ -26,9 +27,9 @@ assert(PROBE_PERSONA.label === 'probe', 'persona');
 assert(PROBE_PERSONA.name === 'Joe Logan', 'probe name Joe Logan');
 assert(/joe\.logan/i.test(PROBE_PERSONA.email), 'probe email joe.logan');
 assert(!/hans/i.test(PROBE_PERSONA.email), 'probe email must not be Hans');
-assert(suggestMethod('https://boards.greenhouse.io/acme/jobs/1') === 'cf_browser', 'greenhouse');
+assert(suggestMethod('https://boards.greenhouse.io/acme/jobs/1') === 'mobile_web', 'greenhouse phone');
 assert(suggestMethod('https://www.linkedin.com/jobs/view/1') === 'needs_you', 'linkedin help');
-assert(suggestMethod('https://indeed.com/viewjob?jk=1') === 'vultr_vpn', 'indeed vpn');
+assert(suggestMethod('https://indeed.com/viewjob?jk=1') === 'mobile_web', 'indeed phone core');
 assert(
   suggestMethod('https://boards.greenhouse.io/x', { last_good_method: 'vultr_vpn', last_result: 'ok' }) === 'vultr_vpn',
   'atlas wins',
@@ -38,9 +39,25 @@ assert(classifyAts('jobs.ashbyhq.com') === 'ashby', 'ashby');
 assert(atsDomain('https://www.indeed.com/viewjob?jk=1') === 'indeed.com', 'domain');
 
 const vultr = planSearch(DEFAULT_PROFILE, { SEARCH_WEBHOOK_URL: 'https://vultr.example/jobspy' });
-assert(vultr.adapter === 'vultr_jobspy', 'vultr adapter');
+assert(vultr.adapter === 'cf_feeds', 'core is always cf_feeds');
+assert(vultr.webhook === 'https://vultr.example/jobspy', 'jobspy stays optional');
 const cf = planSearch(DEFAULT_PROFILE, { BROWSER: {} });
-assert(cf.adapter === 'cf_browser', 'cf adapter');
+assert(cf.adapter === 'cf_feeds', 'browser does not replace cf_feeds');
+const offline = planSearch(DEFAULT_PROFILE, {});
+assert(offline.adapter === 'cf_feeds' && !offline.webhook, 'offline machines still search');
+
+assert(looksRelevant('SEO Director', 'AEO PPC'), 'feed keep seo');
+assert(!looksRelevant('Account Executive', 'quota and pipeline'), 'feed drop ae');
+const rok = parseRemoteOk([
+  { legal: true },
+  { position: 'SEO Director', company: 'Acme', url: 'https://remoteok.com/1', description: 'Organic search AEO', tags: ['seo'] },
+  { position: 'SDR', company: 'No', url: 'https://remoteok.com/2', description: 'cold calls' },
+]);
+assert(rok.length === 1 && rok[0].source === 'cf-remoteok', 'remoteok parse');
+const rem = parseRemotive({
+  jobs: [{ title: 'PPC Director', company_name: 'Y', url: 'https://remotive.com/1', description: 'paid media', category: 'marketing' }],
+});
+assert(rem[0].source === 'cf-remotive', 'remotive parse');
 
 const dropped = await prepareRow({ title: 'Sales Manager', company: 'X', location: 'MI' });
 assert(dropped.status === 'dropped' && dropped.decision.verdict === 'reject', 'ingest drops sales');

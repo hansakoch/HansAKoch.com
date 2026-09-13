@@ -1,40 +1,53 @@
 import type { Profile } from '../profile.ts';
+import { collectCfJobs, type CfSearchResult } from './cf-feeds.ts';
 
 export type SearchPlan = {
-  adapter: 'vultr_jobspy' | 'cf_browser' | 'manual';
+  adapter: 'cf_feeds';
   webhook?: string;
   queries: { term: string; location: string }[];
 };
 
+/** Core search is always Cloudflare public feeds. JobSpy webhook is optional bonus. */
 export function planSearch(profile: Profile, env: { SEARCH_WEBHOOK_URL?: string; BROWSER?: unknown }): SearchPlan {
-  if (env.SEARCH_WEBHOOK_URL) {
-    return { adapter: 'vultr_jobspy', webhook: env.SEARCH_WEBHOOK_URL, queries: profile.queries };
-  }
-  if (env.BROWSER) {
-    return { adapter: 'cf_browser', queries: profile.queries };
-  }
-  return { adapter: 'manual', queries: profile.queries };
+  return {
+    adapter: 'cf_feeds',
+    webhook: env.SEARCH_WEBHOOK_URL || undefined,
+    queries: profile.queries,
+  };
 }
 
-export async function kickSearch(plan: SearchPlan): Promise<{ kicked: boolean; adapter: string; detail: string }> {
-  if (plan.adapter === 'vultr_jobspy' && plan.webhook) {
-    const res = await fetch(plan.webhook, {
+export async function pingOptionalJobspy(webhook?: string): Promise<{ kicked: boolean; detail: string }> {
+  if (!webhook) return { kicked: false, detail: 'JobSpy not configured (optional)' };
+  try {
+    const res = await fetch(webhook, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ queries: plan.queries, destination: '/api/ingest' }),
+      body: JSON.stringify({ queries: [], destination: '/api/ingest', optional: true }),
+      signal: AbortSignal.timeout(3000),
     });
-    return { kicked: res.ok, adapter: plan.adapter, detail: `webhook ${res.status}` };
+    return { kicked: res.ok, detail: `jobspy ${res.status}` };
+  } catch {
+    return { kicked: false, detail: 'jobspy unreachable (ok — CF feeds still run)' };
   }
-  if (plan.adapter === 'cf_browser') {
-    return {
-      kicked: false,
-      adapter: plan.adapter,
-      detail: 'Browser Run listed queries; sites that block CF IPs must fall back to Vultr+VPN.',
-    };
-  }
+}
+
+export async function kickSearch(plan: SearchPlan): Promise<{
+  kicked: boolean;
+  adapter: string;
+  detail: string;
+  feeds?: CfSearchResult;
+  jobspy?: { kicked: boolean; detail: string };
+}> {
+  const feeds = await collectCfJobs();
+  const jobspy = await pingOptionalJobspy(plan.webhook);
+  const detail = `cf_feeds fetched=${feeds.fetched} sources=${JSON.stringify(feeds.sources)}${
+    feeds.errors.length ? ` miss=${feeds.errors.join(',')}` : ''
+  } · ${jobspy.detail}`;
   return {
-    kicked: false,
-    adapter: plan.adapter,
-    detail: 'Set SEARCH_WEBHOOK_URL (Vultr JobSpy) or a Browser binding. POST jobs to /api/ingest.',
+    kicked: feeds.fetched > 0,
+    adapter: 'cf_feeds',
+    detail,
+    feeds,
+    jobspy,
   };
 }

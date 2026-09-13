@@ -7,19 +7,29 @@ export type OnboardingItem = {
 /** Only human-facing clicks. Agent/VPN/vault are automatic — never checklist busywork. */
 export const ONBOARDING_ITEMS: OnboardingItem[] = [
   {
-    key: 'linkedin_logged_in',
-    label: '1. LinkedIn + Indeed logged in (once)',
-    detail: 'Agent opens the headed browser when needed. You only log in if a session expired — then Approve packets as usual.',
+    key: 'iphone_safari',
+    label: '1. iPhone Safari can open listings',
+    detail: 'Core apply is this phone + Cloudflare. Stay logged into LinkedIn/Indeed in Safari when those sites ask. Vultr/Omarchy are optional.',
   },
   {
     key: 'friend_easy_apply',
-    label: '2. Open Careers Easy Apply OK for trusted helper',
-    detail: 'Friend/partner/agent may click Easy Apply on your behalf for good-enough fits. Perfect-fit anxiety is optional.',
+    label: '2. Easy Apply OK for trusted helper',
+    detail: 'Friend/partner may click Easy Apply on good-enough fits. Perfect-fit anxiety is optional.',
   },
   {
     key: 'address_notes',
     label: '3. Confirm Wayne MI + Plivo for forms',
-    detail: 'Nothing to open. If ATS asks address/SMS: Wayne MI + your Plivo number. Tap done if that is still true.',
+    detail: 'If ATS asks address/SMS: Wayne MI + your Plivo number. Tap done if that is still true.',
+  },
+  {
+    key: 'cf_core_enough',
+    label: '4. Cloudflare + this phone is enough',
+    detail: 'Find, score, write, review, and apply work if Omarchy and Vultr are offline. JobSpy is a bonus, not a dependency.',
+  },
+  {
+    key: 'probe_not_hans',
+    label: '5. Probe is never Hans',
+    detail: 'Joe Logan throwaway only. Real Hans apply after you read the packet out loud and it sounds like you.',
   },
 ];
 

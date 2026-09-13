@@ -2,7 +2,11 @@
 
 Read this before writing code. Source of truth is **`origin/main`**, not a stale feature branch.
 
-Reviewed **2026-09-13** from Cursor Cloud agent [HansaKoch Automation](https://cursor.com/agents/bc-d20a2595-f801-46d3-8608-425080f383a4) (owner: Hans Al Koch). This file is the map so the next pass — including from the Cursor iPhone app — can keep pushing until Hans can tap **Approve** then **Submit / open watch** on jobs he actually wants.
+**24h mobile mode:** Cloudflare + iPhone Safari is the core. Omarchy and Vultr may be offline. Do not block find / score / write / review / apply on JobSpy, VNC, or Omarchy.
+
+Phone loop: `/search` → Find jobs on Cloudflare (or paste a listing) → Open apply → Write + approve packet → Copy cover/resume → Open listing → Mark applied.
+
+Reviewed **2026-09-13** from Cursor Cloud agent [HansaKoch Automation](https://cursor.com/agents/bc-d20a2595-f801-46d3-8608-425080f383a4) (owner: Hans Al Koch). This file is the map so the next pass — including from the Cursor iPhone app — can keep pushing until Hans can tap **Write + approve** then **Mark applied** on jobs he actually wants.
 
 ## What we are building (tandem)
 
@@ -86,16 +90,14 @@ Worldwide search. Salary does not matter. Location prior: remote > PH timezone >
 
 ## What is not done (do not claim)
 
-1. **Real Cloudflare Artifacts.** `src/artifacts.ts` is an optional REST PUT stub. `wrangler.toml` has **no** `[[artifacts]]` binding. Official product is Git-compatible repos via `env.ARTIFACTS` ([Workers binding](https://developers.cloudflare.com/artifacts/api/workers-binding/)), closed beta. Default namespace in our stub: `alfred-command`. Until the binding exists, **D1 is source of truth** for resume/cover versions.
-2. **Browser Run Live View / recordings** — not proven end-to-end. No `browser` binding in `wrangler.toml`.
-3. **Watched submit** — code sets status + shows watch text. It does **not** yet drive CDP/VNC for you.
-4. **iPhone 12 apply UX** — buttons are 12px; one-job HELP queue is not designed for a thumb. Password wall is usable. Authenticated flow not verified on a phone in this review.
-5. **hansakoch.com ↔ careers tandem** — public site has **no** careers link. Tailored packets do not publish to `/resume` or `/cover-letter`.
-6. **Apply-loop skill evals** — job-gate gold exists; submit/packet/slop evals do **not**. See [Phil Schmid — testing skills](https://www.philschmid.de/testing-skills): 10–20 outcome-graded prompts, negative tests, graduate to regression.
-7. **Official Cloudflare skills are not installed here.** [github.com/cloudflare/skills](https://github.com/cloudflare/skills) (2026-09-13 catalog) has wrangler, workers-best-practices, agents-sdk, durable-objects, sandbox-*, email, cloudflare-one, web-perf, turnstile — **no first-class Artifacts or Browser Run skill**. Install via Cursor Marketplace / Settings → Rules → Remote Rule (`cloudflare/skills`). Do not vendor a stale copy.
-8. **No real Hans apply yet.** Do not spray Easy Apply under Hans’s name.
-9. **No video masters / talking-head.**
-10. **This Cursor environment** only mounts `github.com/hansakoch/HansAKoch.com`. It does **not** contain Vultr `/projects/HansAKoch.com`, `job-hunt`, `command-os`, or `alfred-report`. Those live on other machines.
+1. **Deploy this branch** so live health shows `"core":"cloudflare"` and `/search` actually ingest CF feeds. Until wrangler deploy, live still expects JobSpy.
+2. **Real Cloudflare Artifacts.** `src/artifacts.ts` is an optional REST PUT stub. `wrangler.toml` has **no** `[[artifacts]]` binding. D1 is source of truth for packets.
+3. **Browser Run Live View** — optional, not required for phone apply.
+4. **hansakoch.com ↔ careers tandem** — no public CTA; packets do not publish to `/resume`.
+5. **Apply-loop skill evals** — gate gold exists; packet-voice evals do not. See [Phil Schmid](https://www.philschmid.de/testing-skills).
+6. **Official Cloudflare skills** — install [cloudflare/skills](https://github.com/cloudflare/skills) via Marketplace. No Artifacts/Browser Run skill in that catalog yet.
+7. **No real Hans apply yet.** Do not spray Easy Apply under Hans’s name.
+8. **This Cursor environment** only mounts `HansAKoch.com`. Vultr/Omarchy folders are not here — and that is fine.
 
 ## Related surfaces (holistic — not this folder)
 
@@ -154,13 +156,12 @@ Old `~/projects/job-hunt/pipeline/` leaked MiMo keys in `score-*.py`. **Rotate, 
 
 **Next clicks (in order — do not skip)**
 
-1. **Hans (human, 2 min):** login on iPhone; mark onboarding if still true (LinkedIn/Indeed session, Easy Apply helper OK, Wayne MI + Plivo).
-2. **Agent + Hans:** confirm D1 has gated jobs (`GET /api/jobs` after cookie). If empty, kick JobSpy (`/search` or wait for 08:00 UTC cron). If the board is junk, fix `eval/gold.json` + `gates.ts` first.
-3. **Probe only:** pick one READY ATS (Greenhouse/Lever/Ashby). Probe as Joe Logan. Watch. Do **not** submit as Hans.
-4. **HELP lane:** one captcha/LinkedIn job. Prove `needs_you` from the phone.
-5. **Then** one real Hans apply on a proven method — after Hans says the packet sounds like him.
-6. Add Phil-Schmid-style evals for packet voice + “no sales title on board” so this cannot regress.
-7. Only after that: Artifacts binding, Browser Run Live View, iPhone tap-target pass, optional public-site CTA.
+1. **Deploy** this Worker (`cd careers && npx wrangler deploy`) so the phone hits CF feeds, not JobSpy-only.
+2. **Hans:** login on iPhone → `/onboarding` → `/search` → **Find jobs on Cloudflare** (or paste a listing).
+3. If the board is junk, fix `eval/gold.json` + `gates.ts` first. Sales on the board is P0.
+4. One job: Write + approve → copy packet → open listing → Mark applied. Read the cover out loud first.
+5. Probe note is optional. Real Hans apply only when the packet sounds like him.
+6. Add packet-voice evals later. Artifacts / Browser Run are upgrades, not blockers.
 
 ## Hard rules (interview-safe)
 

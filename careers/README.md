@@ -6,6 +6,8 @@ Hans tenant: [careers.hansakoch.com](https://careers.hansakoch.com). Anyone else
 
 **Resume this project (iPhone / next agent):** read [`AGENT-RESUME.md`](./AGENT-RESUME.md) first. Always work from `origin/main`. Do not resume from stale `alfred.report/open-careers-os-*` checkouts.
 
+**Core = Cloudflare + iPhone web.** Find, score, write, review, and apply work if Omarchy and Vultr are offline. JobSpy / VNC are optional bonuses.
+
 ## Why gates exist
 
 The old board scored Michigan + marketing keywords as 100. Sales interns and RN managers leaked. **Nothing is visible** until it survives:
@@ -38,13 +40,7 @@ Point Email Routing at the Worker for ATS confirmations and job-alert forwards. 
 
 ### Onboarding checklist
 
-After deploy, open `/onboarding` and complete:
-
-1. LinkedIn + Indeed logged in (human session on Vultr VNC)
-2. 2–3 resume packets in vault paths (SEO/AEO, AI enablement, webmaster)
-3. Plivo / Wayne MI address notes from profile
-4. USA-from-PH submit lane (Vultr + VPN — not home IP)
-5. Probe persona isolated from Hans (Joe Logan throwaway — never Hans cookies)
+After deploy, open `/onboarding` on the phone. Checklist is human-only (Safari, helper OK, Wayne/Plivo, CF-core enough, probe ≠ Hans).
 
 Progress is stored in D1 (`onboarding` table).
 
@@ -52,21 +48,23 @@ Progress is stored in D1 (`onboarding` table).
 
 | Method | When |
 | --- | --- |
-| `cf_browser` | Greenhouse/Lever/Ashby after probe |
-| `vultr_vpn` | Indeed / CF IP blocked — headed browser + hide.me, watch VNC |
-| `needs_you` | LinkedIn/Workday/captcha — you click, agent continues |
-| `manual_packet` | Video or essay — download docs, you upload |
+| `mobile_web` | **Core.** Copy packet on this phone → open listing → Mark applied |
+| `needs_you` | LinkedIn/Workday/captcha — you finish the tap, then Mark applied |
+| `manual_packet` | Video or essay — upload yourself |
+| `cf_browser` | Optional Live View when Browser Run is bound |
+| `vultr_vpn` | Optional VNC when that box is up — never a blocker |
 
 **Probe persona is never Hans** (throwaway: **Joe Logan** / `joe.logan.probe@example.invalid`). Probe cookies stay off the Hans lane.
 
-### Phase 1 apply loop (manual watch)
+### Phone loop (Cloudflare core)
 
-1. Pick a HOT job on `/` → **Open apply**
-2. **Probe ATS** (optional) — records throwaway persona; redirects back to apply page
-3. **Approve packet** — generates resume_md + cover_md, sets `approved=1`
-4. **Submit / open watch** — sets status + shows watch instructions (VNC / Live View / manual packet)
+1. `/search` → **Find jobs on Cloudflare** (or paste a listing)
+2. Hot board → **Open apply**
+3. **Write + approve packet**
+4. **Copy cover/resume** → **Open listing** in Safari → paste
+5. **Mark applied**
 
-## Vultr JobSpy
+## Vultr JobSpy (optional)
 
 POST matches to `/api/ingest`:
 
