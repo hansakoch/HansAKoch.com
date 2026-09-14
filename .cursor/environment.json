@@ -1,0 +1,11 @@
+{
+  "name": "HansAKoch.com",
+  "install": "npm install && npm install --prefix careers",
+  "terminals": [
+    {
+      "name": "astro-dev",
+      "command": "npm run dev"
+    }
+  ],
+  "ports": [4321]
+}
