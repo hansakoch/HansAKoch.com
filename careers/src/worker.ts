@@ -6,7 +6,7 @@ import { digestHtml, digestText, classifyInbound, sendDigestMail, type HotJob } 
 import { remember, reportOral, standingBrief } from './oral.ts';
 import { PROBE_PERSONA, suggestMethod } from './apply/atlas.ts';
 import { fillDocs } from './apply/packet.ts';
-import { snapshotPacket } from './artifacts.ts';
+import { snapshotPacket, ensureMasterRepo, ARTIFACTS_NAMESPACE, MASTER_REPO, type ArtifactsBinding } from './artifacts.ts';
 import { applyPage, boardPage, layout, loginPage, onboardingPage, searchPage } from './ui.ts';
 import { followUpDraft } from './apply/followup.ts';
 import { jobsFromRss } from './search/rss.ts';
@@ -26,9 +26,11 @@ export interface Env {
   ORAL_TOKEN?: string;
   CF_ARTIFACTS_TOKEN?: string;
   CF_ARTIFACTS_NAMESPACE?: string;
+  ARTIFACTS?: ArtifactsBinding;
   BROWSER?: Fetcher;
   ASSETS?: Fetcher;
   MAIL_WEBHOOK_URL?: string;
+  ARTIFACTS?: ArtifactsBinding;
 }
 
 const COOKIE = 'oc_auth';
@@ -138,33 +140,33 @@ async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: st
 }
 
 function submitWatch(method: string, env: Env): { watch: string; nextStatus: string } {
+  const phone =
+    'On this iPhone: Copy cover + resume below → Open listing → paste into the ATS → tap Mark applied. Cloudflare keeps the packet. Vultr/Omarchy are optional.';
+  if (method === 'manual_packet') {
+    return {
+      nextStatus: 'manual_packet',
+      watch: `${phone} This listing wants a video or essay — upload the packet yourself.`,
+    };
+  }
   if (method === 'needs_you' || method === 'unknown') {
     return {
       nextStatus: 'needs_you',
-      watch: 'Open this listing on VNC / Omarchy / Browser Live View. Agent continues after captcha.',
+      watch: `${phone} If captcha/login blocks you, finish that tap and then Mark applied.`,
     };
   }
-  if (method === 'cf_browser') {
+  if (method === 'cf_browser' && env.BROWSER) {
     return {
       nextStatus: 'queued',
-      watch: env.BROWSER
-        ? 'CF Browser Run session — watch Live View. Hans lane only after probe atlas.'
-        : 'CF Browser not bound; falling back to Vultr VNC watch.',
+      watch: `${phone} Browser Run is bound if you want Live View later — not required.`,
     };
   }
   if (method === 'vultr_vpn') {
     return {
       nextStatus: 'queued',
-      watch: 'Vultr + hide.me/VPN headed browser. Watch VNC. Do not use home IP.',
+      watch: `${phone} Vultr VNC is optional when that box is up. Do not wait on it.`,
     };
   }
-  if (method === 'manual_packet') {
-    return {
-      nextStatus: 'manual_packet',
-      watch: 'Download resume/cover from this page and submit yourself. Agent will parse inbound mail.',
-    };
-  }
-  return { nextStatus: 'queued', watch: 'Watch the apply session and confirm submission.' };
+  return { nextStatus: 'queued', watch: phone };
 }
 
 async function hotJobs(env: Env, limit: number) {
@@ -204,16 +206,35 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     return json({
       ok: true,
       product: 'open-careers',
+      core: 'cloudflare',
+      offline_ok: { omarchy: true, vultr: true },
       cron: '0 8 * * *',
+      search: {
+        adapter: 'cf_feeds',
+        jobspy: {
+          configured: !!webhook,
+          host: webhookHost || null,
+          required: false,
+        },
+      },
       search_webhook: {
         configured: !!webhook,
         host: webhookHost || null,
         destination: '/api/ingest',
+        required: false,
       },
       ingest: {
         jobspy: '/api/ingest',
         rss: '/api/ingest/rss',
         email: '/api/ingest/email',
+        add: '/api/jobs/add',
+      },
+      apply: { mobile_web: true, mark_applied: '/api/jobs/:id/applied' },
+      artifacts: {
+        bound: !!env.ARTIFACTS,
+        namespace: env.CF_ARTIFACTS_NAMESPACE || ARTIFACTS_NAMESPACE,
+        master: MASTER_REPO,
+        github: 'public-after-tested',
       },
       d1: !!env.DB,
     });
@@ -278,7 +299,61 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     return json({ success: true, jobs });
   }
 
-  const jobMatch = p.match(/^\/api\/jobs\/([^/]+)\/(thumb|probe|approve|submit|prepare)$/);
+  if (p === '/api/artifacts' && method === 'GET') {
+    if (!env.ARTIFACTS) {
+      return json({
+        success: false,
+        bound: false,
+        namespace: ARTIFACTS_NAMESPACE,
+        master: MASTER_REPO,
+        error: 'ARTIFACTS binding missing — deploy wrangler.toml [[artifacts]] on Iceberg',
+      });
+    }
+    try {
+      const { repo, created } = await ensureMasterRepo(env.ARTIFACTS);
+      return json({
+        success: true,
+        bound: true,
+        created,
+        namespace: ARTIFACTS_NAMESPACE,
+        master: repo.name,
+        remote: repo.remote || null,
+        github: 'public-after-tested',
+      });
+    } catch (err) {
+      return json({
+        success: false,
+        bound: true,
+        error: err instanceof Error ? err.message : 'artifacts error',
+      }, 500);
+    }
+  }
+
+  if (p === '/api/jobs/add' && method === 'POST') {
+    const body = await readBody(request);
+    const title = String(body.title || '').trim();
+    if (!title) {
+      if (wantsHtmlRedirect(request)) return Response.redirect(new URL('/?error=need-title', url).toString(), 302);
+      return json({ success: false, error: 'title required' }, 400);
+    }
+    const incoming: IncomingJob = {
+      title,
+      company: String(body.company || ''),
+      url: String(body.url || ''),
+      location: String(body.location || ''),
+      description: String(body.description || ''),
+      source: 'manual',
+    };
+    const r = await upsertJob(env, incoming);
+    await event(env, r.id, 'ingest-manual', `${title} verdict=${r.verdict}`);
+    if (wantsHtmlRedirect(request)) {
+      if (r.verdict === 'reject') return Response.redirect(new URL('/?dropped=1', url).toString(), 302);
+      return Response.redirect(new URL(`/apply/${r.id}`, url).toString(), 302);
+    }
+    return json({ success: true, ...r });
+  }
+
+  const jobMatch = p.match(/^\/api\/jobs\/([^/]+)\/(thumb|probe|approve|submit|prepare|applied)$/);
   if (jobMatch && method === 'POST') {
     const id = jobMatch[1];
     const action = jobMatch[2];
@@ -304,19 +379,30 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
       return json({ success: true, ...docs });
     }
 
+    if (action === 'applied') {
+      await env.DB.prepare("UPDATE jobs SET status='applied', updated_at=? WHERE id=?").bind(now, id).run();
+      await event(env, id, 'applied', 'marked from mobile web');
+      await remember(env, `Applied ${job.title} @ ${job.company} from mobile web`);
+      if (wantsHtmlRedirect(request)) {
+        return Response.redirect(new URL(`/apply/${id}?applied=1`, url).toString(), 302);
+      }
+      return json({ success: true, status: 'applied' });
+    }
+
     if (action === 'probe') {
       const domain = atsDomain(job.url || '');
       const probeId = await jobId({ url: `${job.url}|probe|${now}` });
-      let result = 'blocked';
-      let method = 'cf_browser';
+      let result = 'noted';
+      let method = job.method || 'mobile_web';
       let notes = `${PROBE_PERSONA.note} persona=${PROBE_PERSONA.email}`;
       if (env.BROWSER) {
         notes += ' Browser binding present — session must stay on probe profile.';
         result = 'needs_session';
+        method = 'cf_browser';
       } else {
-        method = 'vultr_vpn';
-        notes += ' No CF Browser binding. Probe on Vultr+VPN VNC, not Hans cookies.';
-        result = 'queued-vultr';
+        notes += ' No headed browser required. Open listing on this phone after you approve as Hans.';
+        result = 'mobile-note';
+        method = 'mobile_web';
       }
       await env.DB.prepare(
         'INSERT INTO probes (id, job_id, domain, persona, method, result, notes, created_at) VALUES (?,?,?,?,?,?,?,?)',
@@ -379,16 +465,28 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     const profile = DEFAULT_PROFILE;
     const plan = planSearch(profile, env);
     const kicked = await kickSearch(plan);
-    await event(env, null, 'search-run', JSON.stringify(kicked));
-    await reportOral(env, `Search queued via ${kicked.adapter}: ${kicked.detail}`);
-    if ((request.headers.get('Content-Type') || '').includes('form')) {
+    let kept = 0;
+    let dropped = 0;
+    const ids: string[] = [];
+    for (const job of kicked.feeds?.jobs || []) {
+      if (!job?.title) continue;
+      const r = await upsertJob(env, job);
+      ids.push(r.id);
+      if (r.verdict === 'reject') dropped += 1;
+      else kept += 1;
+    }
+    await event(env, null, 'search-run', JSON.stringify({ ...kicked, kept, dropped }));
+    await reportOral(env, `CF search ${kicked.adapter}: kept=${kept} dropped=${dropped} ${kicked.detail}`);
+    if ((request.headers.get('Content-Type') || '').includes('form') || wantsHtmlRedirect(request)) {
       const dest = new URL('/search', url);
       dest.searchParams.set('kicked', kicked.kicked ? '1' : '0');
       dest.searchParams.set('adapter', kicked.adapter || '');
+      dest.searchParams.set('kept', String(kept));
+      dest.searchParams.set('dropped', String(dropped));
       dest.searchParams.set('detail', kicked.detail || '');
       return Response.redirect(dest.toString(), 302);
     }
-    return json({ success: true, plan, kicked });
+    return json({ success: true, plan, kicked, kept, dropped, ids });
   }
 
   if (p === '/api/digest' && method === 'GET') {
@@ -457,6 +555,8 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
       kicked: url.searchParams.get('kicked') || undefined,
       adapter: url.searchParams.get('adapter') || undefined,
       detail: url.searchParams.get('detail') || undefined,
+      kept: url.searchParams.get('kept') || undefined,
+      dropped: url.searchParams.get('dropped') || undefined,
     };
     return new Response(searchPage(DEFAULT_PROFILE.queries, status), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
@@ -473,14 +573,18 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
       return new Response(layout('Not found', '<p>Job not on the apply board.</p>'), { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     let flash = '';
-    if (url.searchParams.get('submitted') === '1') flash = 'Submit queued — follow watch instructions below.';
-    else if (url.searchParams.get('probed') === '1') flash = 'Probe recorded with throwaway persona. Hans cookies not used.';
-    else if (url.searchParams.get('error') === 'approve-first') flash = 'Approve the packet before submit.';
+    if (url.searchParams.get('submitted') === '1') flash = 'Kit ready — copy the packet, open the listing on this phone, then Mark applied.';
+    else if (url.searchParams.get('applied') === '1') flash = 'Marked applied. Inbound ATS mail will update this row.';
+    else if (url.searchParams.get('probed') === '1') flash = 'Probe note recorded (Joe Logan). Hans cookies not used.';
+    else if (url.searchParams.get('error') === 'approve-first') flash = 'Approve the packet before apply.';
     return new Response(applyPage(job, followUpDraft(job), flash), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   if (url.pathname === '/apply' || url.pathname === '/') {
     const jobs = await hotJobs(env, DEFAULT_PROFILE.hot_limit);
-    return new Response(boardPage(jobs), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    let extra = '';
+    if (url.searchParams.get('dropped') === '1') extra = '<div class="banner err">That listing failed the gates (sales/junk). It is not on the board.</div>';
+    if (url.searchParams.get('error') === 'need-title') extra = '<div class="banner err">Need a job title to score.</div>';
+    return new Response(boardPage(jobs, extra), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   return new Response('Not found', { status: 404 });
 }
@@ -521,7 +625,10 @@ export default {
     ctx.waitUntil(
       (async () => {
         const plan = planSearch(DEFAULT_PROFILE, env);
-        await kickSearch(plan);
+        const kicked = await kickSearch(plan);
+        for (const job of kicked.feeds?.jobs || []) {
+          if (job?.title) await upsertJob(env, job);
+        }
         await sendDigest(env, 'https://careers.hansakoch.com');
       })(),
     );

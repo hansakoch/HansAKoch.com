@@ -22,7 +22,7 @@ Personal website for **Hans Al Koch (HAK)** — Director of Agent Optimization. 
 | Resume | [resume.hansakoch.com](https://resume.hansakoch.com) |
 | Cover Letter | [hansakoch.com/cover-letter](https://hansakoch.com/cover-letter) |
 | Contact | [hansakoch.com/contact](https://hansakoch.com/contact) |
-| Careers (private) | [careers.hansakoch.com](https://careers.hansakoch.com) — Open Careers OS in `/careers` |
+| Careers (private) | [careers.hansakoch.com](https://careers.hansakoch.com) — Open Careers OS in `/careers`. Next agent: [`careers/AGENT-RESUME.md`](careers/AGENT-RESUME.md) |
 
 ## 🤖 Agent-Friendly
 

@@ -1,6 +1,6 @@
 import { atsDomain, classifyAts } from '../ids.ts';
 
-export type Method = 'cf_browser' | 'vultr_vpn' | 'needs_you' | 'manual_packet' | 'unknown';
+export type Method = 'mobile_web' | 'cf_browser' | 'vultr_vpn' | 'needs_you' | 'manual_packet' | 'unknown';
 
 export function suggestMethod(url: string, atlasRow?: { last_good_method?: string; last_result?: string } | null): Method {
   const domain = atsDomain(url);
@@ -9,9 +9,10 @@ export function suggestMethod(url: string, atlasRow?: { last_good_method?: strin
     return atlasRow.last_good_method as Method;
   }
   if (family === 'linkedin' || family === 'workday') return 'needs_you';
-  if (family === 'greenhouse' || family === 'lever' || family === 'ashby') return 'cf_browser';
-  if (family === 'indeed') return 'vultr_vpn';
-  return 'unknown';
+  // Phone Safari can open these. Vultr/Browser Run are optional upgrades, not the core path.
+  if (family === 'greenhouse' || family === 'lever' || family === 'ashby') return 'mobile_web';
+  if (family === 'indeed') return 'mobile_web';
+  return 'mobile_web';
 }
 
 export const PROBE_PERSONA = {
