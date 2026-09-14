@@ -1,0 +1,22 @@
+name: careers-deploy
+on:
+  push:
+    branches: [main]
+    paths: ['careers/**', '.github/workflows/careers-deploy.yml']
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Gate + unit eval
+        working-directory: careers
+        run: npm test
+      - name: Deploy careers-hansakoch
+        working-directory: careers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 0870b0bdbc14bcd31f43fe5e82c3ee8e
+        run: npx wrangler deploy

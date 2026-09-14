@@ -9,7 +9,7 @@ export const ONBOARDING_ITEMS: OnboardingItem[] = [
   {
     key: 'iphone_safari',
     label: '1. iPhone Safari can open listings',
-    detail: 'Core apply is this phone + Cloudflare. Stay logged into LinkedIn/Indeed in Safari when those sites ask. Vultr/Omarchy are optional.',
+    detail: 'Core apply is this phone. Stay logged into LinkedIn/Indeed in Safari when those sites ask.',
   },
   {
     key: 'friend_easy_apply',
@@ -24,7 +24,7 @@ export const ONBOARDING_ITEMS: OnboardingItem[] = [
   {
     key: 'cf_core_enough',
     label: '4. Cloudflare + this phone is enough',
-    detail: 'Find, score, write, review, and apply work if Omarchy and Vultr are offline. JobSpy is a bonus, not a dependency.',
+    detail: 'Find, score, write, review, and apply all work on this phone. No VPN or VNC required.',
   },
   {
     key: 'probe_not_hans',

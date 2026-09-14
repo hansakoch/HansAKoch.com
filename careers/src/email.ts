@@ -19,7 +19,7 @@ export function digestHtml(profile: Profile, jobs: HotJob[], origin: string): st
       <a href="${apply}">${apply}</a></li>`;
     })
     .join('\n');
-  return `<p>${esc(profile.name)}, ${jobs.length} hot ops. READY = agent can try. HELP = captcha/login — open in order on VNC / Browser Live View.</p>
+  return `<p>${esc(profile.name)}, ${jobs.length} hot ops. Approve on phone → copy packet → open listing → Mark applied.</p>
 <ol>${rows}</ol>
 <p><a href="${origin}/">Open board</a></p>`;
 }

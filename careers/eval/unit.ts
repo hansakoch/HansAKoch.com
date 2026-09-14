@@ -1,5 +1,5 @@
 import { classifyInbound } from '../src/email.ts';
-import { suggestMethod, PROBE_PERSONA } from '../src/apply/atlas.ts';
+import { normalizeMethod, suggestMethod, PROBE_PERSONA } from '../src/apply/atlas.ts';
 import { planSearch } from '../src/search/run.ts';
 import { prepareRow } from '../src/search/ingest.ts';
 import { DEFAULT_PROFILE } from '../src/profile.ts';
@@ -29,12 +29,14 @@ assert(PROBE_PERSONA.name === 'Joe Logan', 'probe name Joe Logan');
 assert(/joe\.logan/i.test(PROBE_PERSONA.email), 'probe email joe.logan');
 assert(!/hans/i.test(PROBE_PERSONA.email), 'probe email must not be Hans');
 assert(suggestMethod('https://boards.greenhouse.io/acme/jobs/1') === 'mobile_web', 'greenhouse phone');
-assert(suggestMethod('https://www.linkedin.com/jobs/view/1') === 'needs_you', 'linkedin help');
+assert(suggestMethod('https://www.linkedin.com/jobs/view/1') === 'mobile_web', 'linkedin phone');
 assert(suggestMethod('https://indeed.com/viewjob?jk=1') === 'mobile_web', 'indeed phone core');
 assert(
-  suggestMethod('https://boards.greenhouse.io/x', { last_good_method: 'vultr_vpn', last_result: 'ok' }) === 'vultr_vpn',
-  'atlas wins',
+  suggestMethod('https://boards.greenhouse.io/x', { last_good_method: 'vultr_vpn', last_result: 'ok' }) === 'mobile_web',
+  'legacy atlas normalizes to phone',
 );
+assert(normalizeMethod('vultr_vpn') === 'mobile_web', 'normalize vultr');
+assert(normalizeMethod('cf_browser') === 'mobile_web', 'normalize browser');
 
 assert(classifyAts('jobs.ashbyhq.com') === 'ashby', 'ashby');
 assert(atsDomain('https://www.indeed.com/viewjob?jk=1') === 'indeed.com', 'domain');

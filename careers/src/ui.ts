@@ -31,6 +31,8 @@ code.path,.path{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace
 .banner.err{background:#3a1a1a;border-color:#f87171;color:#fecaca}
 .nav a{margin-right:10px}
 label{display:block;margin-top:10px;color:#aaa;font-size:13px}
+.steps{font-size:15px;line-height:1.6;color:#fde68a}
+.steps li{margin:6px 0}
 </style></head><body>
 <div class="top"><div class="wrap">
 <h1>Open Careers</h1>
@@ -42,7 +44,7 @@ document.querySelectorAll('[data-copy]').forEach(function(btn){
   btn.addEventListener('click', async function(){
     var el = document.getElementById(btn.getAttribute('data-copy'));
     if (!el) return;
-    try { await navigator.clipboard.writeText(el.innerText); btn.textContent = 'Copied'; }
+    try { await navigator.clipboard.writeText(el.innerText); btn.textContent = 'Copied ✓'; }
     catch (e) { btn.textContent = 'Select text'; }
   });
 });
@@ -54,7 +56,7 @@ export function loginPage() {
   return layout(
     'Open Careers',
     `<div class="card">
-      <p class="muted">Password — works on this iPhone. Cloudflare is the core; Vultr/Omarchy optional.</p>
+      <p class="muted">Password — works on this iPhone.</p>
       <form method="post" action="/api/auth" style="margin-top:12px">
         <input type="password" name="password" autofocus autocomplete="current-password"/>
         <div class="row"><button class="btn pri" type="submit">Access</button></div>
@@ -67,7 +69,7 @@ export function loginPage() {
 function pasteJobForm() {
   return `<div class="card">
     <p style="color:#fff;font-weight:600">Paste a job (phone)</p>
-    <p class="muted">Score + write a packet without Vultr. Gates still drop sales/junk.</p>
+    <p class="muted">Score + write a packet. Gates still drop sales/junk.</p>
     <form method="post" action="/api/jobs/add">
       <label>Title</label><input name="title" required placeholder="SEO Director"/>
       <label>Company</label><input name="company" placeholder="Acme"/>
@@ -82,16 +84,17 @@ function pasteJobForm() {
 export function boardPage(jobs: any[], extra = '') {
   const cards = jobs
     .map((j) => {
-      const help = j.method === 'needs_you' || j.method === 'unknown' || !j.method;
+      const video = j.packet_notes === 'video-required' || j.method === 'manual_packet';
       const emailReview = j.status === 'reviewed';
+      const kitReady = j.approved && ['ready_to_apply', 'queued', 'needs_you', 'manual_packet'].includes(j.status);
       return `<div class="card ${j.verdict === 'hot' ? 'hot' : ''}">
-        <div><span class="badge ${help ? 'help' : 'ready'}">${help ? 'HELP' : 'READY'}</span>
+        <div><span class="badge ${video ? 'help' : 'ready'}">${video ? 'VIDEO' : kitReady ? 'KIT READY' : 'READY'}</span>
         ${emailReview ? '<span class="badge help">EMAIL</span>' : ''}
-        <span class="badge">${esc(j.score)} · ${esc(j.loc_label || '')} · ${esc(j.method || 'mobile_web')}</span></div>
+        <span class="badge">${esc(j.score)} · ${esc(j.loc_label || '')}</span></div>
         <p style="margin:8px 0 4px;color:#fff;font-weight:600">${esc(j.title)}</p>
         <p class="muted">${esc(j.company || 'Unknown')} · ${esc(j.location || '')}</p>
         <div class="row">
-          <a class="btn pri" href="/apply/${esc(j.id)}">Open apply</a>
+          <a class="btn pri" href="/apply/${esc(j.id)}">${kitReady ? 'Apply now' : 'Open apply'}</a>
           ${j.url ? `<a class="btn" href="${esc(j.url)}" target="_blank" rel="noopener">View original</a>` : ''}
         </div>
       </div>`;
@@ -99,7 +102,7 @@ export function boardPage(jobs: any[], extra = '') {
     .join('');
   return layout(
     'Hot ops — Open Careers',
-    `<p class="muted">Cloudflare core: find → score → write → review → apply on this phone. Omarchy/Vultr offline is fine.</p>
+    `<p class="muted">Find → score → approve → apply on this phone. No VPN. No VNC.</p>
      ${extra}
      ${cards || '<p class="muted">No hot jobs yet. Tap Search, or paste a listing below.</p>'}
      ${pasteJobForm()}`,
@@ -107,37 +110,39 @@ export function boardPage(jobs: any[], extra = '') {
 }
 
 export function applyPage(job: any, followUp = '', flash = '') {
-  const help = job.method === 'needs_you' || job.method === 'unknown';
   const video = job.packet_notes === 'video-required' || job.method === 'manual_packet';
   const approved = !!job.approved;
-  const submitted = ['queued', 'needs_you', 'manual_packet', 'applied'].includes(job.status);
+  const kitReady = approved && ['ready_to_apply', 'queued', 'needs_you', 'manual_packet'].includes(job.status);
   const applied = job.status === 'applied';
   const watch = watchInstructions(job);
   return layout(
     `${job.title} — apply`,
     `<p class="muted"><a href="/">← board</a> · <a href="/onboarding">Onboarding</a></p>
     ${flash ? `<div class="banner ok">${esc(flash)}</div>` : ''}
-    <div class="banner warn">Apply on this iPhone. Copy the packet, open the listing, paste, then Mark applied. Vultr/Omarchy not required.</div>
     <div class="card hot">
-      <span class="badge ${help || video ? 'help' : 'ready'}">${video ? 'VIDEO / PACKET' : help ? 'HELP / captcha' : 'READY'}</span>
-      <span class="badge ${approved ? 'ready' : 'drop'}">${approved ? 'APPROVED' : 'DRAFT'}</span>
+      <span class="badge ${video ? 'help' : 'ready'}">${video ? 'VIDEO / PACKET' : kitReady ? 'KIT READY' : approved ? 'APPROVED' : 'DRAFT'}</span>
       ${applied ? '<span class="badge ready">APPLIED</span>' : ''}
-      <span class="badge">${esc(job.method)} · ${esc(job.status)} · ${esc(job.score)}</span>
+      <span class="badge">${esc(job.score)}</span>
       <h2 style="margin:8px 0;color:#fff">${esc(job.title)}</h2>
       <p class="muted">${esc(job.company)} · ${esc(job.location)}</p>
-      ${job.url ? `<div class="row"><a class="btn pri" href="${esc(job.url)}" target="_blank" rel="noopener">Open listing</a></div>` : ''}
-      ${video ? '<p class="muted">Video or essay listing. Copy the packet, record, upload, then Mark applied.</p>' : ''}
-      ${submitted && watch ? `<div class="card" style="border-color:#facc15;margin-top:12px"><h3>On this phone</h3><pre>${esc(watch)}</pre></div>` : ''}
+      ${kitReady && watch ? `<div class="card" style="border-color:#facc15;margin-top:12px">
+        <h3 style="color:#fde68a">Apply on this phone</h3>
+        <ol class="steps">${watch.split('\n').filter(Boolean).map((s) => `<li>${esc(s.replace(/^\d+\.\s*/, ''))}</li>`).join('')}</ol>
+        <div class="row">
+          <button type="button" class="btn pri" data-copy="cover">Copy cover</button>
+          <button type="button" class="btn pri" data-copy="resume">Copy resume</button>
+          ${job.url ? `<a class="btn pri" href="${esc(job.url)}" target="_blank" rel="noopener">Open listing</a>` : ''}
+        </div>
+      </div>` : ''}
+      ${video && kitReady ? '<p class="muted">Video or essay listing. Record/upload after pasting the packet.</p>' : ''}
       <div class="row">
-        <form method="post" action="/api/jobs/${esc(job.id)}/approve"><button class="btn pri" type="submit">${approved ? 'Re-write packet' : 'Write + approve packet'}</button></form>
-        <form method="post" action="/api/jobs/${esc(job.id)}/submit"><button class="btn" type="submit" ${approved ? '' : 'disabled title="Approve packet first"'}>Ready to apply</button></form>
-        <form method="post" action="/api/jobs/${esc(job.id)}/applied"><button class="btn" type="submit" ${approved ? '' : 'disabled'}>Mark applied</button></form>
+        <form method="post" action="/api/jobs/${esc(job.id)}/approve"><button class="btn pri" type="submit">${approved ? 'Re-write + approve' : 'Approve packet'}</button></form>
+        ${kitReady && !applied ? `<form method="post" action="/api/jobs/${esc(job.id)}/applied"><button class="btn" type="submit">Mark applied</button></form>` : ''}
       </div>
       <div class="row">
         <form method="post" action="/api/jobs/${esc(job.id)}/thumb"><button class="btn" name="vote" value="down">Thumbs down</button></form>
-        <form method="post" action="/api/jobs/${esc(job.id)}/probe"><button class="btn">Probe note (not Hans)</button></form>
       </div>
-      ${!approved ? '<p class="muted" style="margin-top:8px">Write + approve first. Then open the listing and paste.</p>' : ''}
+      ${!approved ? '<p class="muted" style="margin-top:8px">Approve first — then copy, open listing, paste, Mark applied.</p>' : ''}
     </div>
     ${followUp ? `<div class="card"><h3>Follow-up (unsent)</h3><pre>${esc(followUp)}</pre></div>` : ''}
     <div class="card">
@@ -155,15 +160,9 @@ export function applyPage(job: any, followUp = '', flash = '') {
 function watchInstructions(job: any): string {
   const method = job.method || 'mobile_web';
   if (method === 'manual_packet') {
-    return 'Copy cover + resume. Open the listing on this phone. Upload the packet / video. Tap Mark applied.';
+    return 'Copy cover + resume\nOpen the listing on this phone\nUpload the packet / video\nMark applied';
   }
-  if (method === 'needs_you') {
-    return 'Open the listing in Safari. Finish login/captcha. Paste the packet. Tap Mark applied.';
-  }
-  if (method === 'vultr_vpn') {
-    return 'Prefer this phone. If Vultr VNC is up later you can use it — do not wait on it.';
-  }
-  return 'Copy cover + resume → Open listing → paste into the ATS → Mark applied.';
+  return 'Copy cover + resume\nOpen listing in Safari\nPaste into the ATS form\nMark applied';
 }
 
 export function onboardingPage(items: { key: string; label: string; detail: string; done: boolean }[]) {
@@ -182,7 +181,7 @@ export function onboardingPage(items: { key: string; label: string; detail: stri
     .join('');
   return layout(
     'Onboarding — Open Careers',
-    `<p class="muted">${doneCount}/${items.length} — Cloudflare + this phone is the core.</p>
+    `<p class="muted">${doneCount}/${items.length} — this phone is all you need.</p>
     ${rows}`,
   );
 }
@@ -216,7 +215,7 @@ export function searchPage(queries: { term: string; location: string }[], status
     'Search — Open Careers',
     `${banner}
     <div class="card">
-      <p class="muted">Runs on Cloudflare (RemoteOK, Remotive, Arbeitnow, WWR). JobSpy/Vultr is optional and ignored if offline.</p>
+      <p class="muted">Runs on Cloudflare (RemoteOK, Remotive, Arbeitnow, WWR).</p>
       <ol class="muted">${q}</ol>
       <form method="post" action="/api/search/run" class="row"><button class="btn pri">Find jobs on Cloudflare</button></form>
     </div>

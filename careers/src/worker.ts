@@ -4,7 +4,7 @@ import { prepareRow, type IncomingJob } from './search/ingest.ts';
 import { planSearch, kickSearch } from './search/run.ts';
 import { digestHtml, digestText, classifyInbound, sendDigestMail, type HotJob } from './email.ts';
 import { remember, reportOral, standingBrief } from './oral.ts';
-import { PROBE_PERSONA, suggestMethod } from './apply/atlas.ts';
+import { normalizeMethod, PROBE_PERSONA, suggestMethod } from './apply/atlas.ts';
 import { fillDocs } from './apply/packet.ts';
 import { snapshotPacket, ensureMasterRepo, ARTIFACTS_NAMESPACE, MASTER_REPO, type ArtifactsBinding } from './artifacts.ts';
 import { applyPage, boardPage, layout, loginPage, onboardingPage, searchPage } from './ui.ts';
@@ -108,7 +108,7 @@ async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: st
        title=excluded.title, company=excluded.company, location=excluded.location,
        description=excluded.description, gate0=excluded.gate0, gate1=excluded.gate1,
        loc_label=excluded.loc_label, score=excluded.score, verdict=excluded.verdict,
-       method=excluded.method, status=CASE WHEN jobs.status IN ('applied','interview','offer','queued') THEN jobs.status ELSE excluded.status END,
+       method=excluded.method, status=CASE WHEN jobs.status IN ('applied','interview','offer','ready_to_apply','queued','needs_you','manual_packet') THEN jobs.status ELSE excluded.status END,
        resume_md=COALESCE(jobs.resume_md, excluded.resume_md),
        cover_md=COALESCE(jobs.cover_md, excluded.cover_md),
        packet_notes=excluded.packet_notes,
@@ -139,34 +139,17 @@ async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: st
   return { id: row.id, verdict: row.decision.verdict, status, score: row.decision.score };
 }
 
-function submitWatch(method: string, env: Env): { watch: string; nextStatus: string } {
+function submitWatch(method: string): { watch: string; nextStatus: string } {
   const phone =
-    'On this iPhone: Copy cover + resume below → Open listing → paste into the ATS → tap Mark applied. Cloudflare keeps the packet. Vultr/Omarchy are optional.';
-  if (method === 'manual_packet') {
+    '1. Tap Copy cover + Copy resume\n2. Tap Open listing\n3. Paste into the form\n4. Tap Mark applied';
+  const m = normalizeMethod(method);
+  if (m === 'manual_packet') {
     return {
       nextStatus: 'manual_packet',
-      watch: `${phone} This listing wants a video or essay — upload the packet yourself.`,
+      watch: `${phone}\n\nThis listing wants a video or essay — record/upload, then Mark applied.`,
     };
   }
-  if (method === 'needs_you' || method === 'unknown') {
-    return {
-      nextStatus: 'needs_you',
-      watch: `${phone} If captcha/login blocks you, finish that tap and then Mark applied.`,
-    };
-  }
-  if (method === 'cf_browser' && env.BROWSER) {
-    return {
-      nextStatus: 'queued',
-      watch: `${phone} Browser Run is bound if you want Live View later — not required.`,
-    };
-  }
-  if (method === 'vultr_vpn') {
-    return {
-      nextStatus: 'queued',
-      watch: `${phone} Vultr VNC is optional when that box is up. Do not wait on it.`,
-    };
-  }
-  return { nextStatus: 'queued', watch: phone };
+  return { nextStatus: 'ready_to_apply', watch: phone };
 }
 
 async function hotJobs(env: Env, limit: number) {
@@ -392,18 +375,9 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     if (action === 'probe') {
       const domain = atsDomain(job.url || '');
       const probeId = await jobId({ url: `${job.url}|probe|${now}` });
-      let result = 'noted';
-      let method = job.method || 'mobile_web';
-      let notes = `${PROBE_PERSONA.note} persona=${PROBE_PERSONA.email}`;
-      if (env.BROWSER) {
-        notes += ' Browser binding present — session must stay on probe profile.';
-        result = 'needs_session';
-        method = 'cf_browser';
-      } else {
-        notes += ' No headed browser required. Open listing on this phone after you approve as Hans.';
-        result = 'mobile-note';
-        method = 'mobile_web';
-      }
+      const method = 'mobile_web';
+      const result = 'mobile-note';
+      const notes = `${PROBE_PERSONA.note} persona=${PROBE_PERSONA.email}. Open listing on this phone after you approve as Hans.`;
       await env.DB.prepare(
         'INSERT INTO probes (id, job_id, domain, persona, method, result, notes, created_at) VALUES (?,?,?,?,?,?,?,?)',
       )
@@ -434,12 +408,17 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
 
     if (action === 'approve') {
       const docs = job.resume_md ? job : { ...job, ...fillDocs(job) };
-      await env.DB.prepare('UPDATE jobs SET approved=1, resume_md=?, cover_md=?, status=?, updated_at=? WHERE id=?')
-        .bind(docs.resume_md, docs.cover_md, 'ready', now, id)
+      const method = normalizeMethod(job.method);
+      const { nextStatus } = submitWatch(method);
+      await env.DB.prepare(
+        'UPDATE jobs SET approved=1, resume_md=?, cover_md=?, method=?, status=?, updated_at=? WHERE id=?',
+      )
+        .bind(docs.resume_md, docs.cover_md, method, nextStatus, now, id)
         .run();
       await snapshotPacket(env, id, { resume_md: docs.resume_md, cover_md: docs.cover_md });
-      await event(env, id, 'approve', 'packet approved');
-      return Response.redirect(new URL(`/apply/${id}`, url).toString(), 302);
+      await event(env, id, 'approve', `packet approved → ${nextStatus}`);
+      await remember(env, `Kit ready ${job.title} @ ${job.company} — apply on phone`);
+      return Response.redirect(new URL(`/apply/${id}?ready=1`, url).toString(), 302);
     }
 
     if (action === 'submit') {
@@ -449,13 +428,15 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
         }
         return json({ success: false, error: 'approve packet first' }, 400);
       }
-      const method = job.method || 'needs_you';
-      const { watch, nextStatus } = submitWatch(method, env);
-      await env.DB.prepare('UPDATE jobs SET status=?, updated_at=? WHERE id=?').bind(nextStatus, now, id).run();
+      const method = normalizeMethod(job.method);
+      const { watch, nextStatus } = submitWatch(method);
+      await env.DB.prepare('UPDATE jobs SET method=?, status=?, updated_at=? WHERE id=?')
+        .bind(method, nextStatus, now, id)
+        .run();
       await event(env, id, 'submit', `${method} ${watch}`);
-      await remember(env, `Apply queued ${job.title} @ ${job.company} via ${method}`);
+      await remember(env, `Kit ready ${job.title} @ ${job.company}`);
       if (wantsHtmlRedirect(request)) {
-        return Response.redirect(new URL(`/apply/${id}?submitted=1`, url).toString(), 302);
+        return Response.redirect(new URL(`/apply/${id}?ready=1`, url).toString(), 302);
       }
       return json({ success: true, method, status: nextStatus, watch, packet: { resume_md: job.resume_md, cover_md: job.cover_md, url: job.url } });
     }
@@ -523,6 +504,25 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     return json({ success: true, key: onboardingMatch[1], done });
   }
 
+  if (p === '/api/migrate/mobile' && method === 'POST') {
+    const atlas = await env.DB.prepare(
+      "UPDATE atlas SET last_good_method='mobile_web' WHERE last_good_method IN ('vultr_vpn','cf_browser')",
+    ).run();
+    const jobs = await env.DB.prepare(
+      "UPDATE jobs SET method='mobile_web', status='ready_to_apply' WHERE method IN ('vultr_vpn','cf_browser','needs_you','unknown') AND approved=1 AND status NOT IN ('applied','interview','offer','rejected','dropped','thumbs_down')",
+    ).run();
+    const queued = await env.DB.prepare(
+      "UPDATE jobs SET status='ready_to_apply' WHERE approved=1 AND status IN ('queued','needs_you') AND status NOT IN ('applied','interview','offer','rejected')",
+    ).run();
+    await event(env, null, 'migrate-mobile', `atlas=${atlas.meta.changes} jobs=${jobs.meta.changes} queued=${queued.meta.changes}`);
+    return json({
+      success: true,
+      atlas_updated: atlas.meta.changes,
+      jobs_method_updated: jobs.meta.changes,
+      jobs_status_updated: queued.meta.changes,
+    });
+  }
+
   if (p === '/api/stats' && method === 'GET') {
     const hot = await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE verdict='hot' AND status NOT IN ('dropped','thumbs_down')").first<{ n: number }>();
     const help = await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE method IN ('needs_you','unknown') AND verdict!='reject' AND status NOT IN ('dropped','thumbs_down')").first<{ n: number }>();
@@ -573,7 +573,7 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
       return new Response(layout('Not found', '<p>Job not on the apply board.</p>'), { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     let flash = '';
-    if (url.searchParams.get('submitted') === '1') flash = 'Kit ready — copy the packet, open the listing on this phone, then Mark applied.';
+    if (url.searchParams.get('ready') === '1' || url.searchParams.get('submitted') === '1') flash = 'Kit ready — copy the packet, open the listing on this phone, then Mark applied.';
     else if (url.searchParams.get('applied') === '1') flash = 'Marked applied. Inbound ATS mail will update this row.';
     else if (url.searchParams.get('probed') === '1') flash = 'Probe note recorded (Joe Logan). Hans cookies not used.';
     else if (url.searchParams.get('error') === 'approve-first') flash = 'Approve the packet before apply.';
