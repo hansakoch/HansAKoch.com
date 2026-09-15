@@ -92,7 +92,7 @@ async function extraDeny(env: Env): Promise<string[]> {
   return (results || []).map((r) => r.pattern).filter(Boolean);
 }
 
-async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: string } = {}) {
+async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: string; skipResearch?: boolean } = {}) {
   const domain = atsDomain(job.url || '');
   const atlas = domain
     ? await env.DB.prepare('SELECT last_good_method, last_result FROM atlas WHERE domain = ?').bind(domain).first<{ last_good_method: string; last_result: string }>()
@@ -103,10 +103,10 @@ async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: st
   else if (job.source === 'email' && row.decision.verdict !== 'reject') status = 'reviewed';
   const now = new Date().toISOString();
 
-  // Auto-research + auto-generate packet for non-rejected jobs
+  // Auto-research + auto-generate packet for non-rejected jobs (unless bulk import)
   let resume_md = row.resume_md;
   let cover_md = row.cover_md;
-  if (row.decision.verdict !== 'reject') {
+  if (row.decision.verdict !== 'reject' && !opts.skipResearch) {
     try {
       const research = await generateResearch(env, { id: row.id, ...job });
       if (research.company_url && !research.career_page_url) {
@@ -268,9 +268,10 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     let kept = 0;
     let dropped = 0;
     const ids: string[] = [];
+    const skipResearch = body.skip_research === true;
     for (const job of incoming) {
       if (!job?.title) continue;
-      const r = await upsertJob(env, job);
+      const r = await upsertJob(env, job, { skipResearch });
       ids.push(r.id);
       if (r.verdict === 'reject') dropped += 1;
       else kept += 1;
