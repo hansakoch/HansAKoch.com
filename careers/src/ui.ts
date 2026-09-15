@@ -116,6 +116,26 @@ export function applyPage(job: any, followUp = '', flash = '', research: any = n
       ${research.career_page_url ? `<p><a href="${esc(research.career_page_url)}" target="_blank" rel="noopener">Career page →</a></p>` : ''}
     </div>` : '';
 
+  let questionsBlock = '';
+  if (research?.application_questions) {
+    try {
+      const questions = JSON.parse(research.application_questions);
+      if (Array.isArray(questions) && questions.length > 0) {
+        questionsBlock = `
+          <div class="card" style="border-color:#facc15">
+            <h3 style="color:#fde68a">Expected Application Questions</h3>
+            ${questions.map((q: any, i: number) => `
+              <div style="margin:10px 0;padding:8px;border-left:3px solid #333">
+                <p style="color:#fff;font-weight:600;margin-bottom:4px">${esc(q.question)}</p>
+                <pre style="color:#ccc;font-size:13px">${esc(q.answer)}</pre>
+              </div>
+            `).join('')}
+            <p class="muted" style="margin-top:8px">Edit answers by clicking Rewrite with your notes.</p>
+          </div>`;
+      }
+    } catch {}
+  }
+
   const versionsBlock = versions.length > 1 ? `
     <div class="card">
       <h3>Version History (${versions.length} versions)</h3>
@@ -152,6 +172,7 @@ export function applyPage(job: any, followUp = '', flash = '', research: any = n
       ${!approved ? '<p class="muted" style="margin-top:8px">Approve the resume/cover packet before submit.</p>' : ''}
     </div>
     ${researchBlock}
+    ${questionsBlock}
     <div class="card">
       <h3>Rewrite</h3>
       <form method="post" action="/api/jobs/${esc(job.id)}/rewrite">
