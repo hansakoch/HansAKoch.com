@@ -167,33 +167,25 @@ async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: st
 }
 
 function submitWatch(method: string, env: Env): { watch: string; nextStatus: string } {
-  if (method === 'needs_you' || method === 'unknown') {
-    return {
-      nextStatus: 'needs_you',
-      watch: 'Open this listing on VNC / Omarchy / Browser Live View. Agent continues after captcha.',
-    };
-  }
   if (method === 'cf_browser') {
     return {
       nextStatus: 'queued',
-      watch: env.BROWSER
-        ? 'CF Browser Run session — watch Live View. Hans lane only after probe atlas.'
-        : 'CF Browser not bound; falling back to Vultr VNC watch.',
+      watch: 'Applying via company career page.',
     };
   }
   if (method === 'vultr_vpn') {
     return {
       nextStatus: 'queued',
-      watch: 'Vultr + hide.me/VPN headed browser. Watch VNC. Do not use home IP.',
+      watch: 'Applying via secure browser.',
     };
   }
   if (method === 'manual_packet') {
     return {
       nextStatus: 'manual_packet',
-      watch: 'Download resume/cover from this page and submit yourself. Agent will parse inbound mail.',
+      watch: 'This role requires manual submission.',
     };
   }
-  return { nextStatus: 'queued', watch: 'Watch the apply session and confirm submission.' };
+  return { nextStatus: 'queued', watch: 'Applying.' };
 }
 
 async function hotJobs(env: Env, limit: number) {
@@ -698,7 +690,39 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     return new Response(applyPage(job, followUpDraft(job), flash, research, versions), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   if (url.pathname === '/apply' || url.pathname === '/') {
-    const jobs = await hotJobs(env, DEFAULT_PROFILE.hot_limit);
+    const filter = url.searchParams.get('status') || '';
+    let jobs;
+    if (filter === 'hot') {
+      const { results } = await env.DB.prepare(
+        `SELECT * FROM jobs WHERE verdict IN ('hot','maybe') AND status = 'hot' AND status NOT IN ('dropped','thumbs_down')
+         ORDER BY CASE verdict WHEN 'hot' THEN 0 ELSE 1 END, score DESC, updated_at DESC LIMIT ?`,
+      ).bind(DEFAULT_PROFILE.hot_limit).all();
+      jobs = results || [];
+    } else if (filter === 'ready') {
+      const { results } = await env.DB.prepare(
+        `SELECT * FROM jobs WHERE approved=1 AND status NOT IN ('applied','queued','interview','offer','rejected','dropped','thumbs_down')
+         ORDER BY score DESC, updated_at DESC LIMIT ?`,
+      ).bind(DEFAULT_PROFILE.hot_limit).all();
+      jobs = results || [];
+    } else if (filter === 'applied') {
+      const { results } = await env.DB.prepare(
+        `SELECT * FROM jobs WHERE status IN ('applied','queued') ORDER BY updated_at DESC LIMIT ?`,
+      ).bind(DEFAULT_PROFILE.hot_limit).all();
+      jobs = results || [];
+    } else if (filter === 'interview') {
+      const { results } = await env.DB.prepare(
+        `SELECT * FROM jobs WHERE status='interview' ORDER BY updated_at DESC LIMIT ?`,
+      ).bind(DEFAULT_PROFILE.hot_limit).all();
+      jobs = results || [];
+    } else if (filter === 'offer') {
+      const { results } = await env.DB.prepare(
+        `SELECT * FROM jobs WHERE status='offer' ORDER BY updated_at DESC LIMIT ?`,
+      ).bind(DEFAULT_PROFILE.hot_limit).all();
+      jobs = results || [];
+    } else {
+      jobs = await hotJobs(env, DEFAULT_PROFILE.hot_limit);
+    }
+    const allJobs = await hotJobs(env, 1);
     // Get pipeline stats
     const stats = {
       total: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE verdict != 'reject' AND status NOT IN ('dropped','thumbs_down')").first<{ n: number }>())?.n || 0,
@@ -711,7 +735,7 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
       offer: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='offer'").first<{ n: number }>())?.n || 0,
       rejected: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='rejected'").first<{ n: number }>())?.n || 0,
     };
-    return new Response(boardPage(jobs, stats), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    return new Response(boardPage(jobs, stats, filter), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   return new Response('Not found', { status: 404 });
 }

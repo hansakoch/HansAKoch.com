@@ -51,24 +51,25 @@ export function loginPage() {
   );
 }
 
-export function boardPage(jobs: any[], stats: any = {}) {
+export function boardPage(jobs: any[], stats: any = {}, filter = '') {
   const s = {
     total: 0, discovered: 0, reviewing: 0, approved: 0,
     applied: 0, confirmed: 0, interview: 0, offer: 0, rejected: 0, ...stats,
   };
 
+  const f = filter ? `?status=${filter}` : '';
+  const activeFilter = filter || 'all';
+
   const pipeline = `
     <div class="card" style="border-color:#333">
       <h2 style="margin-bottom:12px;font-size:18px">Pipeline</h2>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;text-align:center">
-        <div><div style="font-size:28px;font-weight:700;color:#fff">${s.total}</div><div class="muted">Total ops</div></div>
-        <div><div style="font-size:28px;font-weight:700;color:#facc15">${s.discovered}</div><div class="muted">New</div></div>
-        <div><div style="font-size:28px;font-weight:700;color:#818cf8">${s.reviewing}</div><div class="muted">Packet ready</div></div>
-        <div><div style="font-size:28px;font-weight:700;color:#4ade80">${s.approved}</div><div class="muted">Approved</div></div>
-        <div><div style="font-size:28px;font-weight:700;color:#38bdf8">${s.applied}</div><div class="muted">Applied</div></div>
-        <div><div style="font-size:28px;font-weight:700;color:#22d3ee">${s.confirmed}</div><div class="muted">Confirmed</div></div>
-        <div><div style="font-size:28px;font-weight:700;color:#a78bfa">${s.interview}</div><div class="muted">Interviews</div></div>
-        <div><div style="font-size:28px;font-weight:700;color:#fbbf24">${s.offer}</div><div class="muted">Offers</div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px;text-align:center">
+        <a href="/" style="text-decoration:none;${activeFilter === 'all' ? 'border-bottom:2px solid #fff;padding-bottom:4px' : ''}"><div style="font-size:24px;font-weight:700;color:#fff">${s.total}</div><div class="muted">All</div></a>
+        <a href="/?status=hot" style="text-decoration:none;${activeFilter === 'hot' ? 'border-bottom:2px solid #facc15;padding-bottom:4px' : ''}"><div style="font-size:24px;font-weight:700;color:#facc15">${s.discovered}</div><div class="muted">New</div></a>
+        <a href="/?status=ready" style="text-decoration:none;${activeFilter === 'ready' ? 'border-bottom:2px solid #4ade80;padding-bottom:4px' : ''}"><div style="font-size:24px;font-weight:700;color:#4ade80">${s.approved}</div><div class="muted">Approved</div></a>
+        <a href="/?status=applied" style="text-decoration:none;${activeFilter === 'applied' ? 'border-bottom:2px solid #38bdf8;padding-bottom:4px' : ''}"><div style="font-size:24px;font-weight:700;color:#38bdf8">${s.applied}</div><div class="muted">Applied</div></a>
+        <a href="/?status=interview" style="text-decoration:none;${activeFilter === 'interview' ? 'border-bottom:2px solid #a78bfa;padding-bottom:4px' : ''}"><div style="font-size:24px;font-weight:700;color:#a78bfa">${s.interview}</div><div class="muted">Interviews</div></a>
+        <a href="/?status=offer" style="text-decoration:none;${activeFilter === 'offer' ? 'border-bottom:2px solid #fbbf24;padding-bottom:4px' : ''}"><div style="font-size:24px;font-weight:700;color:#fbbf24">${s.offer}</div><div class="muted">Offers</div></a>
       </div>
     </div>`;
 
@@ -148,9 +149,8 @@ export function applyPage(job: any, followUp = '', flash = '', research: any = n
 
   return layout(
     `${job.title} — apply`,
-    `<p class="muted"><a href="/">← board</a> · <a href="/onboarding">Onboarding checklist</a></p>
+    `<p class="muted"><a href="/">← board</a> · <a href="/onboarding">Onboarding</a></p>
     ${flash ? `<div class="card" style="border-color:#4ade80"><p>${esc(flash)}</p></div>` : ''}
-    <div class="card" style="border-color:#38bdf8"><p><strong>Which browser?</strong> ${job.method === 'vultr_vpn' ? 'Vultr VNC + VPN Chromium only (not Omarchy / home IP).' : job.method === 'cf_browser' ? 'CF Browser Live View.' : 'See watch box after Submit.'}</p></div>
     <div class="card hot">
       <span class="badge ${help || video ? 'help' : 'ready'}">${video ? 'VIDEO / PACKET' : help ? 'HELP / captcha' : 'READY'}</span>
       <span class="badge ${approved ? 'ready' : 'drop'}">${approved ? 'APPROVED' : 'DRAFT'}</span>
@@ -159,7 +159,7 @@ export function applyPage(job: any, followUp = '', flash = '', research: any = n
       <p class="muted">${esc(job.company)} · ${esc(job.location)}</p>
       ${job.url ? `<p><a href="${esc(job.url)}" target="_blank" rel="noopener">View original →</a></p>` : ''}
       ${video ? '<p class="muted">This listing wants a video or custom essay. Download the packet, record, then the agent continues.</p>' : ''}
-      ${submitted && watch ? `<div class="card" style="border-color:#facc15;margin-top:12px"><h3>Watch instructions</h3><pre>${esc(watch)}</pre></div>` : ''}
+      ${submitted ? `<div class="card" style="border-color:#4ade80"><p style="color:#bbf7d0">Submitted. You will be notified when the application is confirmed.</p></div>` : ''}
       <div class="row">
         <form method="post" action="/api/jobs/${esc(job.id)}/thumb"><button class="btn" name="vote" value="down">Thumbs down</button></form>
         <form method="post" action="/api/jobs/${esc(job.id)}/probe"><button class="btn">Probe ATS</button></form>
@@ -193,19 +193,16 @@ export function applyPage(job: any, followUp = '', flash = '', research: any = n
 
 function watchInstructions(job: any): string {
   const method = job.method || 'needs_you';
-  if (method === 'needs_you' || method === 'unknown') {
-    return 'Open this listing on VNC / Omarchy / Browser Live View. You handle captcha/login; agent continues after.';
-  }
   if (method === 'cf_browser') {
-    return 'CF Browser Run session — watch Live View. Hans lane only after probe atlas confirms method.';
+    return 'Applying via company career page. You will be notified when complete.';
   }
   if (method === 'vultr_vpn') {
-    return 'DO THIS ON VULTR VNC (not Omarchy Chrome, not home IP):\n1) Open VNC → Chromium\n2) Turn on hide.me VPN\n3) Use logged-in Indeed/LinkedIn\n4) Submit this packet\n5) Close Chromium when done (save RAM)\nApply queue = same job; VNC is only the browser that must click Submit.';
+    return 'Applying via secure browser. You will be notified when complete.';
   }
   if (method === 'manual_packet') {
-    return 'Download resume/cover from this page and submit yourself (HireVue/video/essay). Agent parses inbound mail for status.';
+    return 'This role requires a video or custom submission. Download the packet and submit manually.';
   }
-  return '';
+  return 'Applying. You will be notified when complete.';
 }
 
 export function onboardingPage(items: { key: string; label: string; detail: string; done: boolean }[]) {
