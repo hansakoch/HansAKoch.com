@@ -13,6 +13,7 @@ import { parseJobFromEmail, EMAIL_ARCHIVE_NOTE } from './search/email-ingest.ts'
 import { ONBOARDING_ITEMS, ensureOnboardingRows, getOnboardingState, setOnboardingDone } from './onboarding.ts';
 import { generateResearch, storeResearch, getResearch, type CompanyResearch } from './research.ts';
 import { generateAiPacket, templatePacket, storePacketVersion, getPacketVersions, getLatestVersion } from './ai-packet.ts';
+import { findCareerPage, detectAtsType } from './career-finder.ts';
 
 export interface Env {
   DB: D1Database;
@@ -467,8 +468,14 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     const job = await env.DB.prepare('SELECT * FROM jobs WHERE id = ?').bind(id).first<any>();
     if (!job) return json({ success: false, error: 'not found' }, 404);
     const research = await generateResearch(env, job);
+    // Also discover career page
+    if (research.company_url && !research.career_page_url) {
+      try {
+        research.career_page_url = await findCareerPage(research.company_url);
+      } catch {}
+    }
     await storeResearch(env.DB, research);
-    await event(env, id, 'research', `company=${research.company_url}`);
+    await event(env, id, 'research', `company=${research.company_url} career=${research.career_page_url}`);
     if (wantsHtmlRedirect(request)) {
       return Response.redirect(new URL(`/apply/${id}?researched=1`, url).toString(), 302);
     }
@@ -550,6 +557,75 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     return json({ success: true, version, ...packet });
   }
 
+  // Browser apply: navigate to career page and submit application
+  const browserApplyMatch = p.match(/^\/api\/jobs\/([^/]+)\/apply$/);
+  if (browserApplyMatch && method === 'POST') {
+    const id = browserApplyMatch[1];
+    const job = await env.DB.prepare('SELECT * FROM jobs WHERE id = ?').bind(id).first<any>();
+    if (!job) return json({ success: false, error: 'not found' }, 404);
+    if (!job.approved) {
+      if (wantsHtmlRedirect(request)) {
+        return Response.redirect(new URL(`/apply/${id}?error=approve-first`, url).toString(), 302);
+      }
+      return json({ success: false, error: 'approve packet first' }, 400);
+    }
+
+    const research = await getResearch(env.DB, id);
+    const careerUrl = research?.career_page_url || '';
+    const atsType = careerUrl ? detectAtsType(careerUrl) : 'unknown';
+
+    // If we have a career page URL and CF Browser, attempt automated apply
+    if (careerUrl && env.BROWSER) {
+      try {
+        // Dynamically import puppeteer only when needed
+        const puppeteer = await import('@cloudflare/puppeteer');
+        const browser = await puppeteer.default.launch(env.BROWSER);
+        const page = await browser.newPage();
+        await page.goto(careerUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+        const pageTitle = await page.title();
+        const screenshot = await page.screenshot({ type: 'png', fullPage: true }) as unknown as Buffer;
+        await browser.close();
+
+        const now = new Date().toISOString();
+        await env.DB.prepare('UPDATE jobs SET status=?, method=?, updated_at=? WHERE id=?')
+          .bind('applying', 'cf_browser', now, id)
+          .run();
+        await event(env, id, 'browser-apply', `navigated to ${careerUrl} ats=${atsType} title=${pageTitle}`);
+
+        if (wantsHtmlRedirect(request)) {
+          return Response.redirect(new URL(`/apply/${id}?navigated=1`, url).toString(), 302);
+        }
+        return json({
+          success: true,
+          method: 'cf_browser',
+          careerUrl,
+          atsType,
+          pageTitle,
+          note: 'Career page loaded. Form filling requires session persistence — use Live View for now.',
+        });
+      } catch (e: any) {
+        await event(env, id, 'browser-apply-error', e?.message || 'unknown');
+        // Fall through to manual
+      }
+    }
+
+    // Fallback: show instructions
+    const method = careerUrl ? 'cf_browser' : 'needs_you';
+    const watch = careerUrl
+      ? `Apply at: ${careerUrl}\nATS type: ${atsType}\nUse CF Browser Live View to fill and submit.`
+      : `Find the career page for ${job.company} and apply directly.\nDo NOT use LinkedIn Easy Apply — go to their website.`;
+
+    await env.DB.prepare('UPDATE jobs SET status=?, updated_at=? WHERE id=?')
+      .bind('needs_you', new Date().toISOString(), id)
+      .run();
+    await event(env, id, 'apply-instructions', watch.slice(0, 200));
+
+    if (wantsHtmlRedirect(request)) {
+      return Response.redirect(new URL(`/apply/${id}?submitted=1`, url).toString(), 302);
+    }
+    return json({ success: true, method, careerUrl, atsType, watch });
+  }
+
   return null;
 }
 
@@ -585,6 +661,7 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     else if (url.searchParams.get('error') === 'approve-first') flash = 'Approve the packet before submit.';
     else if (url.searchParams.get('researched') === '1') flash = 'Company research complete. Now generate or rewrite the packet.';
     else if (url.searchParams.get('rewritten') === '1') flash = 'Packet rewritten with your feedback. Review and approve.';
+    else if (url.searchParams.get('navigated') === '1') flash = 'Career page loaded via CF Browser. Check Live View to complete submission.';
     return new Response(applyPage(job, followUpDraft(job), flash, research, versions), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   if (url.pathname === '/apply' || url.pathname === '/') {

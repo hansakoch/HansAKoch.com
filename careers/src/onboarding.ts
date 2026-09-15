@@ -7,19 +7,29 @@ export type OnboardingItem = {
 /** Only human-facing clicks. Agent/VPN/vault are automatic — never checklist busywork. */
 export const ONBOARDING_ITEMS: OnboardingItem[] = [
   {
-    key: 'linkedin_logged_in',
-    label: '1. LinkedIn + Indeed logged in (once)',
-    detail: 'Agent opens the headed browser when needed. You only log in if a session expired — then Approve packets as usual.',
+    key: 'cf_browser_enabled',
+    label: '1. CF Browser Rendering enabled',
+    detail: 'Browser Rendering must be enabled in Cloudflare dashboard for automated form filling. Check Workers & Pages → Settings.',
   },
   {
-    key: 'friend_easy_apply',
-    label: '2. Open Careers Easy Apply OK for trusted helper',
-    detail: 'Friend/partner/agent may click Easy Apply on your behalf for good-enough fits. Perfect-fit anxiety is optional.',
+    key: 'proxy_rotation',
+    label: '2. Proxy rotation ready',
+    detail: 'alfred-proxy hide.me WireGuard tunnels provide 10 exit IPs. Browser Use Cloud has built-in proxy rotation.',
   },
   {
     key: 'address_notes',
     label: '3. Confirm Wayne MI + Plivo for forms',
-    detail: 'Nothing to open. If ATS asks address/SMS: Wayne MI + your Plivo number. Tap done if that is still true.',
+    detail: 'If ATS asks address/SMS: Wayne MI + your Plivo number. Tap done if that is still true.',
+  },
+  {
+    key: 'review_packets',
+    label: '4. Review packets on phone',
+    detail: 'Open /apply/:id, read the AI-generated packet, add comments, click Rewrite until happy, then Approve.',
+  },
+  {
+    key: 'approve_and_apply',
+    label: '5. Approve + Apply workflow',
+    detail: 'After approving, click Submit. Agent navigates company career page via CF Browser and fills the form.',
   },
 ];
 

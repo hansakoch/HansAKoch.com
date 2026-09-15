@@ -9,16 +9,17 @@ export function layout(title: string, body: string, authed = true) {
 <title>${esc(title)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:#0a0a0a;color:#e0e0e0}
-a{color:#ff4444} .wrap{max-width:980px;margin:0 auto;padding:24px}
-.top{background:#111;border-bottom:1px solid #222;padding:16px 24px}
-h1{font-size:22px;color:#fff} .muted{color:#888;font-size:13px}
-.card{background:#141414;border:1px solid #222;border-radius:8px;padding:14px;margin:10px 0}
-.card.hot{border-color:#4ade80} .badge{font-size:10px;padding:2px 8px;border-radius:10px;margin-right:6px}
+body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:#0a0a0a;color:#e0e0e0;font-size:16px}
+a{color:#ff4444} .wrap{max-width:980px;margin:0 auto;padding:16px}
+.top{background:#111;border-bottom:1px solid #222;padding:12px 16px}
+h1{font-size:20px;color:#fff} .muted{color:#888;font-size:13px}
+.card{background:#141414;border:1px solid #222;border-radius:8px;padding:12px;margin:8px 0}
+.card.hot{border-color:#4ade80} .badge{font-size:10px;padding:2px 8px;border-radius:10px;margin-right:4px;display:inline-block}
 .ready{background:#14532d;color:#86efac} .help{background:#3a3a1a;color:#facc15} .drop{background:#3a1a1a;color:#f87171}
-.btn{background:#1a1a1a;border:1px solid #333;color:#ccc;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px}
-.btn.pri{background:#ff4444;border-color:#ff4444;color:#fff}
-input,textarea{width:100%;background:#0a0a0a;border:1px solid #333;color:#fff;padding:10px;border-radius:6px}
+.btn{background:#1a1a1a;border:1px solid #333;color:#ccc;padding:10px 14px;border-radius:6px;cursor:pointer;font-size:14px;min-height:44px;touch-action:manipulation}
+.btn.pri{background:#ff4444;border-color:#ff4444;color:#fff;font-weight:600}
+input,textarea{width:100%;background:#0a0a0a;border:1px solid #333;color:#fff;padding:12px;border-radius:6px;font-size:16px}
+textarea{resize:vertical;min-height:80px}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 pre{white-space:pre-wrap;font-size:12px;color:#ccc;max-height:280px;overflow:auto}
 code.path,.path{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#bbf7d0;user-select:all;-webkit-user-select:all;background:#0a0a0a;padding:3px 8px;border-radius:4px;border:1px solid #333;display:inline-block;margin:3px 0;cursor:text}
@@ -123,7 +124,9 @@ export function applyPage(job: any, followUp = '', flash = '', research: any = n
         ${!research ? `<form method="post" action="/api/jobs/${esc(job.id)}/research"><button class="btn" style="border-color:#818cf8;color:#c7d2fe">Research company</button></form>` : ''}
         ${!job.resume_md ? `<form method="post" action="/api/jobs/${esc(job.id)}/generate"><button class="btn" style="border-color:#818cf8;color:#c7d2fe">Generate AI packet</button></form>` : ''}
         <form method="post" action="/api/jobs/${esc(job.id)}/approve"><button class="btn">${approved ? 'Re-approve' : 'Approve packet'}</button></form>
-        <form method="post" action="/api/jobs/${esc(job.id)}/submit"><button class="btn pri" ${approved ? '' : 'disabled title="Approve packet first"'}>Submit / apply</button></form>
+        ${approved && research?.career_page_url ? `<form method="post" action="/api/jobs/${esc(job.id)}/apply"><button class="btn pri">Apply via company site</button></form>` : ''}
+        ${approved && !research?.career_page_url ? `<form method="post" action="/api/jobs/${esc(job.id)}/submit"><button class="btn pri">Submit / apply</button></form>` : ''}
+        ${!approved ? `<form method="post" action="/api/jobs/${esc(job.id)}/submit"><button class="btn pri" disabled title="Approve packet first">Submit / apply</button></form>` : ''}
       </div>
       ${!approved ? '<p class="muted" style="margin-top:8px">Approve the resume/cover packet before submit.</p>' : ''}
     </div>
