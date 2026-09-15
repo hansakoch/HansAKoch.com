@@ -8,7 +8,7 @@ export type OnboardingItem = {
 export const ONBOARDING_ITEMS: OnboardingItem[] = [
   {
     key: 'cf_browser_enabled',
-    label: '1. CF Browser Rendering enabled',
+    label: '1. Browser Rendering enabled',
     detail: 'Browser Rendering must be enabled in Cloudflare dashboard for automated form filling. Check Workers & Pages → Settings.',
   },
   {
@@ -24,12 +24,12 @@ export const ONBOARDING_ITEMS: OnboardingItem[] = [
   {
     key: 'review_packets',
     label: '4. Review packets on phone',
-    detail: 'Open /apply/:id, read the AI-generated packet, add comments, click Rewrite until happy, then Approve.',
+    detail: 'Open a job op, read the packet, add notes, click Rewrite until happy, then Approve.',
   },
   {
     key: 'approve_and_apply',
     label: '5. Approve + Apply workflow',
-    detail: 'After approving, click Submit. Agent navigates company career page via CF Browser and fills the form.',
+    detail: 'After approving, click Submit. Agent navigates company career page via Browser and fills the form.',
   },
 ];
 

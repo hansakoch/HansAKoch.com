@@ -12,7 +12,7 @@ import { jobsFromRss } from './search/rss.ts';
 import { parseJobFromEmail, EMAIL_ARCHIVE_NOTE } from './search/email-ingest.ts';
 import { ONBOARDING_ITEMS, ensureOnboardingRows, getOnboardingState, setOnboardingDone } from './onboarding.ts';
 import { generateResearch, storeResearch, getResearch, type CompanyResearch } from './research.ts';
-import { generateAiPacket, templatePacket, storePacketVersion, getPacketVersions, getLatestVersion } from './ai-packet.ts';
+import { generatePacket, templatePacket, storePacketVersion, getPacketVersions, getLatestVersion } from './ai-packet.ts';
 import { findCareerPage, detectAtsType } from './career-finder.ts';
 
 export interface Env {
@@ -102,6 +102,32 @@ async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: st
   if (opts.statusOverride) status = opts.statusOverride;
   else if (job.source === 'email' && row.decision.verdict !== 'reject') status = 'reviewed';
   const now = new Date().toISOString();
+
+  // Auto-research + auto-generate packet for non-rejected jobs
+  let resume_md = row.resume_md;
+  let cover_md = row.cover_md;
+  if (row.decision.verdict !== 'reject') {
+    try {
+      const research = await generateResearch(env, { id: row.id, ...job });
+      if (research.company_url && !research.career_page_url) {
+        try { research.career_page_url = await findCareerPage(research.company_url); } catch {}
+      }
+      await storeResearch(env.DB, research);
+      const packet = await generatePacket(env, job, research);
+      if (packet.resume_md) resume_md = packet.resume_md;
+      if (packet.cover_md) cover_md = packet.cover_md;
+      // Store as version 1
+      await storePacketVersion(env.DB, {
+        job_id: row.id,
+        version: 1,
+        resume_md,
+        cover_md,
+        comments: '',
+        created_at: now,
+      });
+    } catch {}
+  }
+
   await env.DB.prepare(
     `INSERT INTO jobs (id,url,title,company,location,source,description,gate0,gate1,loc_label,score,verdict,method,status,resume_md,cover_md,packet_notes,created_at,updated_at)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -110,8 +136,8 @@ async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: st
        description=excluded.description, gate0=excluded.gate0, gate1=excluded.gate1,
        loc_label=excluded.loc_label, score=excluded.score, verdict=excluded.verdict,
        method=excluded.method, status=CASE WHEN jobs.status IN ('applied','interview','offer','queued') THEN jobs.status ELSE excluded.status END,
-       resume_md=COALESCE(jobs.resume_md, excluded.resume_md),
-       cover_md=COALESCE(jobs.cover_md, excluded.cover_md),
+       resume_md=COALESCE(excluded.resume_md, jobs.resume_md),
+       cover_md=COALESCE(excluded.cover_md, jobs.cover_md),
        packet_notes=excluded.packet_notes,
        updated_at=excluded.updated_at`,
   )
@@ -130,8 +156,8 @@ async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: st
       row.decision.verdict,
       row.method,
       status,
-      row.resume_md,
-      row.cover_md,
+      resume_md,
+      cover_md,
       row.packet_notes,
       now,
       now,
@@ -499,7 +525,7 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     const research = await getResearch(env.DB, id);
     const prevVersion = job.resume_md || '';
     const nextVersion = (await getLatestVersion(env.DB, id)) + 1;
-    const packet = await generateAiPacket(env, job, research, comments, prevVersion);
+    const packet = await generatePacket(env, job, research, comments, prevVersion);
     await storePacketVersion(env.DB, {
       job_id: id,
       version: nextVersion,
@@ -543,7 +569,7 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     const job = await env.DB.prepare('SELECT * FROM jobs WHERE id = ?').bind(id).first<any>();
     if (!job) return json({ success: false, error: 'not found' }, 404);
     const research = await getResearch(env.DB, id);
-    const packet = await generateAiPacket(env, job, research);
+    const packet = await generatePacket(env, job, research);
     const version = (await getLatestVersion(env.DB, id)) + 1;
     await storePacketVersion(env.DB, {
       job_id: id,
@@ -672,7 +698,19 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
   }
   if (url.pathname === '/apply' || url.pathname === '/') {
     const jobs = await hotJobs(env, DEFAULT_PROFILE.hot_limit);
-    return new Response(boardPage(jobs), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    // Get pipeline stats
+    const stats = {
+      total: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE verdict != 'reject' AND status NOT IN ('dropped','thumbs_down')").first<{ n: number }>())?.n || 0,
+      discovered: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='hot' AND approved=0").first<{ n: number }>())?.n || 0,
+      reviewing: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='hot' AND approved=0 AND resume_md IS NOT NULL AND resume_md != ''").first<{ n: number }>())?.n || 0,
+      approved: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE approved=1 AND status NOT IN ('applied','queued','interview','offer','rejected')").first<{ n: number }>())?.n || 0,
+      applied: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status IN ('applied','queued')").first<{ n: number }>())?.n || 0,
+      confirmed: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='applied'").first<{ n: number }>())?.n || 0,
+      interview: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='interview'").first<{ n: number }>())?.n || 0,
+      offer: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='offer'").first<{ n: number }>())?.n || 0,
+      rejected: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='rejected'").first<{ n: number }>())?.n || 0,
+    };
+    return new Response(boardPage(jobs, stats), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   return new Response('Not found', { status: 404 });
 }
@@ -730,8 +768,8 @@ export default {
     }
     const classified = classifyInbound(subject, text.slice(0, 4000));
     const { results } = await env.DB.prepare(
-      "SELECT id, company, title FROM jobs WHERE status NOT IN ('dropped','thumbs_down') ORDER BY updated_at DESC LIMIT 50",
-    ).all<{ id: string; company: string; title: string }>();
+      "SELECT id, company, title, score FROM jobs WHERE status NOT IN ('dropped','thumbs_down') ORDER BY updated_at DESC LIMIT 50",
+    ).all<{ id: string; company: string; title: string; score: number }>();
     const blob = `${subject} ${text}`.toLowerCase();
     const match = (results || []).find((j) => {
       const c = (j.company || '').toLowerCase();
@@ -740,7 +778,17 @@ export default {
     });
     const now = new Date().toISOString();
     if (match && classified.status) {
-      await env.DB.prepare('UPDATE jobs SET status=?, updated_at=? WHERE id=?').bind(classified.status, now, match.id).run();
+      // Confirmation received: boost score and update status
+      let newScore = match.score;
+      if (classified.status === 'applied' || classified.status === 'received') {
+        newScore = Math.min(100, match.score + 10);
+        await env.DB.prepare('UPDATE jobs SET status=?, score=?, updated_at=? WHERE id=?')
+          .bind('applied', newScore, now, match.id).run();
+        await event(env, match.id, 'confirmed', `Application confirmed. Score boosted to ${newScore}`);
+      } else {
+        await env.DB.prepare('UPDATE jobs SET status=?, score=?, updated_at=? WHERE id=?')
+          .bind(classified.status, newScore, now, match.id).run();
+      }
     } else if (!match && classified.kind === 'inbound-other') {
       const parsed = parseJobFromEmail(subject, text, from);
       if (parsed) {

@@ -1,4 +1,4 @@
-/** AI-powered packet generation — tailored resume + cover letter per job. */
+/** Packet generation — tailored resume + cover letter per job. */
 
 import { RESUME, resumeForPrompt } from './resume-data.ts';
 import type { CompanyResearch } from './research.ts';
@@ -13,7 +13,7 @@ export type PacketVersion = {
   created_at: string;
 };
 
-/** Build the AI prompt for packet generation. */
+/** Build the prompt for packet generation. */
 function packetPrompt(
   job: { title: string; company: string; description?: string; location?: string },
   research: CompanyResearch | null,
@@ -38,7 +38,7 @@ Career page: ${research.career_page_url}
   let commentBlock = '';
   if (comments) {
     commentBlock = `
-HANS'S FEEDBACK ON PREVIOUS VERSION:
+FEEDBACK ON PREVIOUS VERSION:
 ${comments}
 `;
   }
@@ -51,22 +51,32 @@ ${previousVersion}
 `;
   }
 
-  return `You are a professional resume and cover letter writer. Generate a tailored packet for this job application.
+  return `You are writing a resume and cover letter for a real person applying to a job. Write like a human, not a machine.
 
-HANS'S RESUME:
+Rules:
+- No em dashes. Use commas, periods, or parentheses instead.
+- No "vibrant", "tapestry", "pivotal", "crucial", "fostering", "showcasing", "underscore", "testament", "delve".
+- No "I'm excited to apply". Start with why you fit.
+- No bullet-point laundry lists. Write in connected prose.
+- Vary sentence length. Short ones. Longer ones that take their time.
+- Sound like someone who has actually done this work for 27 years, not someone describing it.
+- Be specific. Name the tools, the numbers, the outcomes.
+- If the cover letter is 4 paragraphs, that's fine. If it's 3, also fine. Don't pad.
+
+HANS'S BACKGROUND:
 ${resumeText}
 
-JOB DETAILS:
+JOB:
 Title: ${job.title}
 Company: ${job.company}
 Location: ${job.location || 'Remote'}
 Description: ${desc}
 ${researchBlock}${commentBlock}${previousBlock}
-Generate TWO documents:
+Write two documents:
 
-1. RESUME — Tailored for this specific role. Emphasize the most relevant experience and skills. Use Hans's actual work history and achievements. Format as clean markdown with headers.
+1. RESUME — Tailored for this role. Pull the most relevant experience. Use Hans's actual work history. Clean markdown.
 
-2. COVER LETTER — Personalized to this company and role. Reference their values/culture if known. Be specific about why Hans fits. Keep it to 3-4 paragraphs. Professional but human tone.
+2. COVER LETTER — Addressed to the hiring team. Reference what you know about the company. Be direct about why this person fits. 3-4 paragraphs max. Sound like a real person wrote it at their kitchen table.
 
 Return as JSON:
 {
@@ -74,11 +84,11 @@ Return as JSON:
   "cover_letter_md": "..."
 }
 
-Return ONLY valid JSON, no markdown code blocks.`;
+Return ONLY valid JSON.`;
 }
 
 /** Generate packet using Workers AI. */
-export async function generateAiPacket(
+export async function generatePacket(
   env: { AI?: Ai },
   job: { title: string; company: string; description?: string; location?: string },
   research: CompanyResearch | null,
@@ -92,14 +102,13 @@ export async function generateAiPacket(
   try {
     const response = await env.AI.run('@cf/meta/llama-3.2-3b-instruct', {
       messages: [
-        { role: 'system', content: 'You are a professional resume writer. Return only valid JSON.' },
+        { role: 'system', content: 'You write like a real person, not a machine. No AI patterns. Return only valid JSON.' },
         { role: 'user', content: packetPrompt(job, research, comments, previousVersion) },
       ],
       max_tokens: 4096,
-      temperature: 0.7,
+      temperature: 0.8,
     });
     const text = typeof response === 'object' && 'response' in response ? (response as any).response : String(response);
-    // Extract JSON from potential markdown wrapping
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('No JSON in response');
     const parsed = JSON.parse(jsonMatch[0]);
@@ -131,13 +140,13 @@ ${RESUME.basics.summary}
 NOTES FROM THE JD
 ${desc || 'See listing.'}
 `,
-    cover_md: `Hi ${company} team —
+    cover_md: `Hi ${company} team,
 
-I'm applying for ${title}. I run websites and growth systems (SEO, AEO, PPC, ORM) and I build Ai agents to do the ops work. Iceberg Media since 2012; OpenRoyleAl / Alfred.report now.
+I'm writing about ${title}. I run websites and growth systems (SEO, AEO, PPC, ORM) and I build autonomous agents to handle the ops work. Been at Iceberg Media since 2012; now running OpenRoyleAl and Alfred.report on Cloudflare.
 
-I don't sell. I install the machine that finds customers and keeps the sites honest.
+I don't do sales. I build the machine that finds customers and keeps the sites honest.
 
-If you want someone who can sit in the CMS, the ads account, and the agent logs, I'm that person.
+If you need someone who can sit in the CMS, the ads account, and the agent logs, that's me.
 
 Hans Al Koch
 hans@hansakoch.com · +1 (313) 355-8675
