@@ -2,6 +2,9 @@ name = "careers-hansakoch"
 main = "src/worker.ts"
 compatibility_date = "2025-04-01"
 
+[ai]
+binding = "AI"
+
 [vars]
 # Set CAREERS_PASSWORD as a secret: wrangler secret put CAREERS_PASSWORD
 NOTIFY_EMAIL = "hans@hansakoch.com"

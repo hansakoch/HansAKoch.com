@@ -76,12 +76,33 @@ export function boardPage(jobs: any[], extra = '') {
   );
 }
 
-export function applyPage(job: any, followUp = '', flash = '') {
+export function applyPage(job: any, followUp = '', flash = '', research: any = null, versions: any[] = []) {
   const help = job.method === 'needs_you' || job.method === 'unknown';
   const video = job.packet_notes === 'video-required' || job.method === 'manual_packet';
   const approved = !!job.approved;
   const submitted = ['queued', 'needs_you', 'manual_packet', 'applied'].includes(job.status);
   const watch = watchInstructions(job);
+
+  const researchBlock = research ? `
+    <div class="card" style="border-color:#818cf8">
+      <h3 style="color:#c7d2fe">Company Research</h3>
+      <p class="muted"><strong>About:</strong> ${esc(research.company_about)}</p>
+      ${research.company_values ? `<p class="muted"><strong>Values:</strong> ${esc(research.company_values)}</p>` : ''}
+      ${research.team_info ? `<p class="muted"><strong>Team:</strong> ${esc(research.team_info)}</p>` : ''}
+      ${research.culture_notes ? `<p class="muted"><strong>Culture:</strong> ${esc(research.culture_notes)}</p>` : ''}
+      ${research.career_page_url ? `<p><a href="${esc(research.career_page_url)}" target="_blank" rel="noopener">Career page →</a></p>` : ''}
+    </div>` : '';
+
+  const versionsBlock = versions.length > 1 ? `
+    <div class="card">
+      <h3>Version History (${versions.length} versions)</h3>
+      ${versions.map((v: any) => `<div style="margin:6px 0;padding:6px;border-left:3px solid ${v.version === versions.length ? '#4ade80' : '#333'}">
+        <span class="badge ${v.version === versions.length ? 'ready' : ''}">v${v.version}</span>
+        <span class="muted">${new Date(v.created_at).toLocaleString()}</span>
+        ${v.comments ? `<p class="muted" style="margin-top:4px;font-size:11px">"${esc(v.comments.slice(0, 120))}"</p>` : ''}
+      </div>`).join('')}
+    </div>` : '';
+
   return layout(
     `${job.title} — apply`,
     `<p class="muted"><a href="/">← board</a> · <a href="/onboarding">Onboarding checklist</a></p>
@@ -97,16 +118,30 @@ export function applyPage(job: any, followUp = '', flash = '') {
       ${video ? '<p class="muted">This listing wants a video or custom essay. Download the packet, record, then the agent continues.</p>' : ''}
       ${submitted && watch ? `<div class="card" style="border-color:#facc15;margin-top:12px"><h3>Watch instructions</h3><pre>${esc(watch)}</pre></div>` : ''}
       <div class="row">
-        <form method="post" action="/api/jobs/${esc(job.id)}/thumb"><button class="btn" name="vote" value="down">Thumbs down (never again)</button></form>
-        <form method="post" action="/api/jobs/${esc(job.id)}/probe"><button class="btn">Probe ATS (fake persona)</button></form>
-        <form method="post" action="/api/jobs/${esc(job.id)}/approve"><button class="btn">${approved ? 'Re-approve packet' : 'Approve packet'}</button></form>
-        <form method="post" action="/api/jobs/${esc(job.id)}/submit"><button class="btn pri" ${approved ? '' : 'disabled title="Approve packet first"'}>Submit / open watch</button></form>
+        <form method="post" action="/api/jobs/${esc(job.id)}/thumb"><button class="btn" name="vote" value="down">Thumbs down</button></form>
+        <form method="post" action="/api/jobs/${esc(job.id)}/probe"><button class="btn">Probe ATS</button></form>
+        ${!research ? `<form method="post" action="/api/jobs/${esc(job.id)}/research"><button class="btn" style="border-color:#818cf8;color:#c7d2fe">Research company</button></form>` : ''}
+        ${!job.resume_md ? `<form method="post" action="/api/jobs/${esc(job.id)}/generate"><button class="btn" style="border-color:#818cf8;color:#c7d2fe">Generate AI packet</button></form>` : ''}
+        <form method="post" action="/api/jobs/${esc(job.id)}/approve"><button class="btn">${approved ? 'Re-approve' : 'Approve packet'}</button></form>
+        <form method="post" action="/api/jobs/${esc(job.id)}/submit"><button class="btn pri" ${approved ? '' : 'disabled title="Approve packet first"'}>Submit / apply</button></form>
       </div>
       ${!approved ? '<p class="muted" style="margin-top:8px">Approve the resume/cover packet before submit.</p>' : ''}
     </div>
+    ${researchBlock}
+    <div class="card">
+      <h3>Comments & Rewrite</h3>
+      <form method="post" action="/api/jobs/${esc(job.id)}/rewrite">
+        <textarea name="comments" rows="3" placeholder="Add notes for the AI: 'emphasize agent work', 'mention startup experience', 'tone down the technical jargon'..."></textarea>
+        <div class="row" style="margin-top:8px">
+          <button class="btn pri" type="submit">Rewrite with AI</button>
+          <span class="muted" style="font-size:11px;align-self:center">AI uses your comments + company research to tailor the packet</span>
+        </div>
+      </form>
+    </div>
     ${followUp ? `<div class="card"><h3>Follow-up (unsent)</h3><pre>${esc(followUp)}</pre></div>` : ''}
-    <div class="card"><h3>Cover</h3><pre>${esc(job.cover_md || '(generate on approve)')}</pre></div>
-    <div class="card"><h3>Resume</h3><pre>${esc(job.resume_md || '(generate on approve)')}</pre></div>
+    <div class="card"><h3>Cover Letter</h3><pre>${esc(job.cover_md || '(generate AI packet first)')}</pre></div>
+    <div class="card"><h3>Resume</h3><pre>${esc(job.resume_md || '(generate AI packet first)')}</pre></div>
+    ${versionsBlock}
     <div class="card"><h3>Listing notes</h3><pre>${esc((job.description || '').slice(0, 2000))}</pre></div>`,
   );
 }

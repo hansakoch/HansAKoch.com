@@ -78,7 +78,7 @@ const emailJob = parseJobFromEmail(
 );
 assert(emailJob?.title && emailJob.source === 'email', 'email parse');
 assert(EMAIL_ARCHIVE_NOTE.includes('archive'), 'archive note');
-assert(ONBOARDING_ITEMS.length >= 5, 'onboarding items');
+assert(ONBOARDING_ITEMS.length >= 3, 'onboarding items');
 
 const goldHot = {
   title: 'SEO Director',

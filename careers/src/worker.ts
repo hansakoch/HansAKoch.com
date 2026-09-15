@@ -5,16 +5,18 @@ import { planSearch, kickSearch } from './search/run.ts';
 import { digestHtml, digestText, classifyInbound, sendDigestMail, type HotJob } from './email.ts';
 import { remember, reportOral, standingBrief } from './oral.ts';
 import { PROBE_PERSONA, suggestMethod } from './apply/atlas.ts';
-import { fillDocs } from './apply/packet.ts';
 import { snapshotPacket } from './artifacts.ts';
 import { applyPage, boardPage, layout, loginPage, onboardingPage, searchPage } from './ui.ts';
 import { followUpDraft } from './apply/followup.ts';
 import { jobsFromRss } from './search/rss.ts';
 import { parseJobFromEmail, EMAIL_ARCHIVE_NOTE } from './search/email-ingest.ts';
 import { ONBOARDING_ITEMS, ensureOnboardingRows, getOnboardingState, setOnboardingDone } from './onboarding.ts';
+import { generateResearch, storeResearch, getResearch, type CompanyResearch } from './research.ts';
+import { generateAiPacket, templatePacket, storePacketVersion, getPacketVersions, getLatestVersion } from './ai-packet.ts';
 
 export interface Env {
   DB: D1Database;
+  AI?: Ai;
   CAREERS_PASSWORD?: string;
   SEARCH_WEBHOOK_URL?: string;
   NOTIFY_EMAIL?: string;
@@ -201,10 +203,23 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     } catch {
       webhookHost = 'invalid-url';
     }
+    let aiStatus = 'not bound';
+    if (env.AI) {
+      try {
+        const test = await env.AI.run('@cf/meta/llama-3.2-3b-instruct', {
+          messages: [{ role: 'user', content: 'Reply with: ok' }],
+          max_tokens: 10,
+        });
+        aiStatus = typeof test === 'object' && 'response' in test ? 'ok' : 'responded';
+      } catch (e: any) {
+        aiStatus = `error: ${e?.message || 'unknown'}`;
+      }
+    }
     return json({
       ok: true,
       product: 'open-careers',
       cron: '0 8 * * *',
+      ai: aiStatus,
       search_webhook: {
         configured: !!webhook,
         host: webhookHost || null,
@@ -297,7 +312,7 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     }
 
     if (action === 'prepare') {
-      const docs = fillDocs(job);
+      const docs = templatePacket(job);
       await env.DB.prepare('UPDATE jobs SET resume_md=?, cover_md=?, updated_at=? WHERE id=?')
         .bind(docs.resume_md, docs.cover_md, now, id)
         .run();
@@ -347,7 +362,7 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     }
 
     if (action === 'approve') {
-      const docs = job.resume_md ? job : { ...job, ...fillDocs(job) };
+      const docs = job.resume_md ? job : { ...job, ...templatePacket(job) };
       await env.DB.prepare('UPDATE jobs SET approved=1, resume_md=?, cover_md=?, status=?, updated_at=? WHERE id=?')
         .bind(docs.resume_md, docs.cover_md, 'ready', now, id)
         .run();
@@ -445,6 +460,96 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     });
   }
 
+  // Research: generate company research for a job
+  const researchMatch = p.match(/^\/api\/jobs\/([^/]+)\/research$/);
+  if (researchMatch && method === 'POST') {
+    const id = researchMatch[1];
+    const job = await env.DB.prepare('SELECT * FROM jobs WHERE id = ?').bind(id).first<any>();
+    if (!job) return json({ success: false, error: 'not found' }, 404);
+    const research = await generateResearch(env, job);
+    await storeResearch(env.DB, research);
+    await event(env, id, 'research', `company=${research.company_url}`);
+    if (wantsHtmlRedirect(request)) {
+      return Response.redirect(new URL(`/apply/${id}?researched=1`, url).toString(), 302);
+    }
+    return json({ success: true, research });
+  }
+
+  // Rewrite: AI rewrites packet with Hans's comments
+  const rewriteMatch = p.match(/^\/api\/jobs\/([^/]+)\/rewrite$/);
+  if (rewriteMatch && method === 'POST') {
+    const id = rewriteMatch[1];
+    const job = await env.DB.prepare('SELECT * FROM jobs WHERE id = ?').bind(id).first<any>();
+    if (!job) return json({ success: false, error: 'not found' }, 404);
+    const body = await readBody(request);
+    const comments = String(body.comments || '');
+    const research = await getResearch(env.DB, id);
+    const prevVersion = job.resume_md || '';
+    const nextVersion = (await getLatestVersion(env.DB, id)) + 1;
+    const packet = await generateAiPacket(env, job, research, comments, prevVersion);
+    await storePacketVersion(env.DB, {
+      job_id: id,
+      version: nextVersion,
+      resume_md: packet.resume_md,
+      cover_md: packet.cover_md,
+      comments,
+      created_at: new Date().toISOString(),
+    });
+    await env.DB.prepare('UPDATE jobs SET resume_md=?, cover_md=?, approved=0, updated_at=? WHERE id=?')
+      .bind(packet.resume_md, packet.cover_md, new Date().toISOString(), id)
+      .run();
+    await event(env, id, 'rewrite', `v${nextVersion} comments=${comments.slice(0, 100)}`);
+    if (wantsHtmlRedirect(request)) {
+      return Response.redirect(new URL(`/apply/${id}?rewritten=1`, url).toString(), 302);
+    }
+    return json({ success: true, version: nextVersion, ...packet });
+  }
+
+  // Save comments without rewriting
+  const commentMatch = p.match(/^\/api\/jobs\/([^/]+)\/comment$/);
+  if (commentMatch && method === 'POST') {
+    const id = commentMatch[1];
+    const body = await readBody(request);
+    const comments = String(body.comments || '');
+    await event(env, id, 'comment', comments.slice(0, 500));
+    return json({ success: true, comments });
+  }
+
+  // Get packet version history
+  const versionsMatch = p.match(/^\/api\/jobs\/([^/]+)\/versions$/);
+  if (versionsMatch && method === 'GET') {
+    const id = versionsMatch[1];
+    const versions = await getPacketVersions(env.DB, id);
+    return json({ success: true, versions });
+  }
+
+  // Generate initial AI packet for a job
+  const generateMatch = p.match(/^\/api\/jobs\/([^/]+)\/generate$/);
+  if (generateMatch && method === 'POST') {
+    const id = generateMatch[1];
+    const job = await env.DB.prepare('SELECT * FROM jobs WHERE id = ?').bind(id).first<any>();
+    if (!job) return json({ success: false, error: 'not found' }, 404);
+    const research = await getResearch(env.DB, id);
+    const packet = await generateAiPacket(env, job, research);
+    const version = (await getLatestVersion(env.DB, id)) + 1;
+    await storePacketVersion(env.DB, {
+      job_id: id,
+      version,
+      resume_md: packet.resume_md,
+      cover_md: packet.cover_md,
+      comments: '',
+      created_at: new Date().toISOString(),
+    });
+    await env.DB.prepare('UPDATE jobs SET resume_md=?, cover_md=?, updated_at=? WHERE id=?')
+      .bind(packet.resume_md, packet.cover_md, new Date().toISOString(), id)
+      .run();
+    await event(env, id, 'generate', `v${version}`);
+    if (wantsHtmlRedirect(request)) {
+      return Response.redirect(new URL(`/apply/${id}`, url).toString(), 302);
+    }
+    return json({ success: true, version, ...packet });
+  }
+
   return null;
 }
 
@@ -472,11 +577,15 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     if (!job || job.verdict === 'reject' || job.status === 'dropped') {
       return new Response(layout('Not found', '<p>Job not on the apply board.</p>'), { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
+    const research = await getResearch(env.DB, apply[1]);
+    const versions = await getPacketVersions(env.DB, apply[1]);
     let flash = '';
     if (url.searchParams.get('submitted') === '1') flash = 'Submit queued — follow watch instructions below.';
     else if (url.searchParams.get('probed') === '1') flash = 'Probe recorded with throwaway persona. Hans cookies not used.';
     else if (url.searchParams.get('error') === 'approve-first') flash = 'Approve the packet before submit.';
-    return new Response(applyPage(job, followUpDraft(job), flash), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    else if (url.searchParams.get('researched') === '1') flash = 'Company research complete. Now generate or rewrite the packet.';
+    else if (url.searchParams.get('rewritten') === '1') flash = 'Packet rewritten with your feedback. Review and approve.';
+    return new Response(applyPage(job, followUpDraft(job), flash, research, versions), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   if (url.pathname === '/apply' || url.pathname === '/') {
     const jobs = await hotJobs(env, DEFAULT_PROFILE.hot_limit);

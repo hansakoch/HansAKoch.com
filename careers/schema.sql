@@ -64,3 +64,27 @@ CREATE TABLE IF NOT EXISTS onboarding (
   notes TEXT,
   updated_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS research (
+  job_id TEXT PRIMARY KEY,
+  company_url TEXT,
+  career_page_url TEXT,
+  company_about TEXT,
+  company_values TEXT,
+  team_info TEXT,
+  hiring_manager TEXT,
+  culture_notes TEXT,
+  researched_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS packet_versions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id TEXT NOT NULL,
+  version INTEGER NOT NULL,
+  resume_md TEXT,
+  cover_md TEXT,
+  comments TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_pv_job ON packet_versions(job_id);
