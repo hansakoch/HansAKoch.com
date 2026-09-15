@@ -446,10 +446,16 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     const help = await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE method IN ('needs_you','unknown') AND verdict!='reject' AND status NOT IN ('dropped','thumbs_down')").first<{ n: number }>();
     const interview = await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='interview'").first<{ n: number }>();
     const applied = await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status IN ('applied','queued')").first<{ n: number }>();
+    const researching = await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='researching'").first<{ n: number }>();
+    const ready = await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='ready' AND approved=1").first<{ n: number }>();
+    const total = await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE verdict != 'reject' AND status NOT IN ('dropped','thumbs_down')").first<{ n: number }>();
     return json({
       success: true,
+      total: total?.n || 0,
       hot: hot?.n || 0,
       help: help?.n || 0,
+      researching: researching?.n || 0,
+      ready: ready?.n || 0,
       interview: interview?.n || 0,
       applied: applied?.n || 0,
       brief: standingBrief({

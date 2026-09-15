@@ -17,4 +17,4 @@ database_name = "careers-hak"
 database_id = "6410cd87-5313-4761-8226-aa3a635e249d"
 
 [triggers]
-crons = ["0 8 * * *"]
+crons = ["0 8 * * *", "0 14 * * *", "0 20 * * *"]
