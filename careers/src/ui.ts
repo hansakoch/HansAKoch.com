@@ -209,10 +209,15 @@ function watchInstructions(job: any): string {
   return 'Applying. You will be notified when complete.';
 }
 
-export function onboardingPage(items: { key: string; label: string; detail: string; done: boolean }[]) {
+export function onboardingPage(
+  items: { key: string; label: string; detail: string; done: boolean }[],
+  trainingQuestions: any[] = [],
+) {
   const doneCount = items.filter((i) => i.done).length;
   const allDone = doneCount === items.length;
   const pendingCount = items.length - doneCount;
+  const unansweredQs = trainingQuestions.filter((q) => !q.answered_at);
+  const answeredQs = trainingQuestions.filter((q) => q.answered_at);
 
   const flashBanner = !allDone ? `
     <div class="card flash" style="border-color:#ff4444;background:#3a1a1a">
@@ -228,7 +233,7 @@ export function onboardingPage(items: { key: string; label: string; detail: stri
       <p class="muted" style="margin-top:4px">You are ready to apply for jobs.</p>
     </div>`;
 
-  const rows = items
+  const taskRows = items
     .map(
       (i) => `<details ${!i.done ? 'open' : ''} style="margin:8px 0;border:1px solid ${i.done ? '#222' : '#ff4444'};border-radius:8px;padding:8px 12px;background:#141414">
         <summary style="display:flex;gap:12px;align-items:center">
@@ -246,10 +251,64 @@ export function onboardingPage(items: { key: string; label: string; detail: stri
     )
     .join('');
 
+  // Training questions section
+  const trainingSection = `
+    <div style="margin-top:24px">
+      <h2 style="margin-bottom:12px">Research Training</h2>
+      <p class="muted" style="margin-bottom:16px">Answer these questions to help me research and score opportunities better. Your answers shape how I find and filter jobs.</p>
+
+      ${unansweredQs.length > 0 ? `
+        <div class="card flash" style="border-color:#facc15;background:#3a3a1a">
+          <strong style="color:#fde68a;font-size:16px">${unansweredQs.length} question${unansweredQs.length > 1 ? 's' : ''} need your answer</strong>
+        </div>
+        ${unansweredQs.map((q) => `
+          <div class="card" style="border-color:#facc15">
+            <p style="color:#fff;font-weight:600;margin-bottom:8px">${esc(q.question)}</p>
+            ${q.context ? `<p class="muted" style="margin-bottom:8px;font-size:12px">${esc(q.context)}</p>` : ''}
+            <form method="post" action="/api/training/${q.id}/answer">
+              <textarea name="answer" rows="2" placeholder="Your answer or guidance..."></textarea>
+              <div class="row" style="margin-top:8px">
+                <button class="btn pri" type="submit">Answer</button>
+                <button class="btn" type="submit" name="answer" value="skip">Skip</button>
+              </div>
+            </form>
+          </div>
+        `).join('')}
+      ` : `
+        <div class="card" style="border-color:#4ade80">
+          <p style="color:#86efac">No pending questions. Check back after the next research scan.</p>
+        </div>
+      `}
+
+      ${answeredQs.length > 0 ? `
+        <details style="margin-top:16px">
+          <summary style="color:#888;cursor:pointer">Previous answers (${answeredQs.length})</summary>
+          ${answeredQs.slice(0, 10).map((q) => `
+            <div class="card" style="border-color:#222;margin-top:8px">
+              <p style="color:#ccc;font-size:13px">${esc(q.question)}</p>
+              <p style="color:#4ade80;font-size:13px;margin-top:4px">→ ${esc(q.answer)}</p>
+            </div>
+          `).join('')}
+        </details>
+      ` : ''}
+
+      <div class="card" style="margin-top:16px;border-color:#333">
+        <h3 style="margin-bottom:8px">Ask me anything</h3>
+        <form method="post" action="/api/training">
+          <input type="hidden" name="category" value="user"/>
+          <textarea name="question" rows="2" placeholder="Tell me how to research better: 'always check career pages for invoices', 'this company is gold', 'skip newsletters from X'..."></textarea>
+          <div class="row" style="margin-top:8px">
+            <button class="btn pri" type="submit">Send guidance</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+
   return layout(
     'Tasks — Open Careers',
     `${flashBanner}
-    ${rows}`,
+    ${taskRows}
+    ${trainingSection}`,
   );
 }
 

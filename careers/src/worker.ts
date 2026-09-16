@@ -442,7 +442,6 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     const body = await readBody(request);
     const jobUrl = String(body.url || '').trim();
     if (!jobUrl) return json({ success: false, error: 'url required' }, 400);
-    // Try to extract title from URL
     let title = 'Job opportunity';
     let company = '';
     const urlMatch = jobUrl.match(/greenhouse\.io\/([^/]+)/);
@@ -459,6 +458,68 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
       return Response.redirect(new URL(`/apply/${result.id}`, url).toString(), 302);
     }
     return json({ success: true, ...result });
+  }
+
+  // Training questions API
+  if (p === '/api/training' && method === 'GET') {
+    const { results } = await env.DB.prepare(
+      'SELECT * FROM training_questions ORDER BY CASE WHEN answered_at IS NULL THEN 0 ELSE 1 END, created_at DESC LIMIT 50',
+    ).all();
+    return json({ success: true, questions: results || [] });
+  }
+
+  if (p === '/api/training' && method === 'POST') {
+    const body = await readBody(request);
+    const question = String(body.question || '').trim();
+    const context = String(body.context || '').trim();
+    const category = String(body.category || 'research').trim();
+    if (!question) return json({ success: false, error: 'question required' }, 400);
+    const now = new Date().toISOString();
+    await env.DB.prepare(
+      'INSERT INTO training_questions (question, context, category, created_at) VALUES (?, ?, ?, ?)',
+    ).bind(question, context, category, now).run();
+    if (wantsHtmlRedirect(request)) {
+      return Response.redirect(new URL('/tasks', url).toString(), 302);
+    }
+    return json({ success: true });
+  }
+
+  const trainingAnswerMatch = p.match(/^\/api\/training\/(\d+)\/answer$/);
+  if (trainingAnswerMatch && method === 'POST') {
+    const id = Number(trainingAnswerMatch[1]);
+    const body = await readBody(request);
+    const answer = String(body.answer || '').trim();
+    const now = new Date().toISOString();
+    await env.DB.prepare(
+      'UPDATE training_questions SET answer=?, answered_at=? WHERE id=?',
+    ).bind(answer, now, id).run();
+    await event(env, null, 'training-answer', `Q${id}: ${answer.slice(0, 100)}`);
+    if (wantsHtmlRedirect(request)) {
+      return Response.redirect(new URL('/tasks', url).toString(), 302);
+    }
+    return json({ success: true });
+  }
+
+  // System-generated training questions (from research engine)
+  if (p === '/api/training/ask' && method === 'POST') {
+    const body = await readBody(request);
+    const questions = Array.isArray(body.questions) ? body.questions : [];
+    const now = new Date().toISOString();
+    let added = 0;
+    for (const q of questions) {
+      const question = String(q.question || '').trim();
+      const context = String(q.context || '').trim();
+      const category = String(q.category || 'research').trim();
+      if (!question) continue;
+      // Skip if same question already exists
+      const existing = await env.DB.prepare('SELECT id FROM training_questions WHERE question = ?').bind(question).first();
+      if (existing) continue;
+      await env.DB.prepare(
+        'INSERT INTO training_questions (question, context, category, created_at) VALUES (?, ?, ?, ?)',
+      ).bind(question, context, category, now).run();
+      added += 1;
+    }
+    return json({ success: true, added });
   }
 
   if (p === '/api/digest' && method === 'GET') {
@@ -705,7 +766,10 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     await ensureOnboardingRows(env.DB);
     const state = await getOnboardingState(env.DB);
     const items = ONBOARDING_ITEMS.map((i) => ({ ...i, done: state[i.key] }));
-    return new Response(onboardingPage(items), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    const { results: trainingQuestions } = await env.DB.prepare(
+      'SELECT * FROM training_questions ORDER BY CASE WHEN answered_at IS NULL THEN 0 ELSE 1 END, created_at DESC LIMIT 50',
+    ).all();
+    return new Response(onboardingPage(items, trainingQuestions || []), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   const apply = url.pathname.match(/^\/apply\/([^/]+)$/);
   if (apply) {
