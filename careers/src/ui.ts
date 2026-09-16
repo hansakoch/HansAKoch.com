@@ -357,7 +357,7 @@ export type SearchStatus = {
 
 const RESUME_MASTER = `Hans Al Koch (HAK)
 San Luis Obispo, CA · hans@hansakoch.com · +1 (415) 683-1016
-hansakoch.com · linkedin.com/in/hansakochcom · github.com/hansakoch · x.com/hansakoch
+hansakoch.com · linkedin.com/in/hansakochcom · github.com/hansakoch · x.com/hansakoch · cursor.com/@iamhak
 
 SUMMARY
 AI Enablement & Automation Architect with 27+ years in digital marketing. Director & CMO of Iceberg Media (14 years). Managing 145+ domains and 160 Google Business Profiles. Building autonomous AI agents on Cloudflare. Early adopter of OpenClaw (Jan 2025, 18.7K to 388K stars).
@@ -410,7 +410,7 @@ export function mePage() {
         <span class="muted">LinkedIn</span><span style="color:#fff"><a href="https://linkedin.com/in/hansakochcom" target="_blank">linkedin.com/in/hansakochcom</a></span>
         <span class="muted">GitHub</span><span style="color:#fff"><a href="https://github.com/hansakoch" target="_blank">github.com/hansakoch</a></span>
         <span class="muted">X / Twitter</span><span style="color:#fff"><a href="https://x.com/hansakoch" target="_blank">x.com/hansakoch</a></span>
-        <span class="muted">Cursor</span><span style="color:#fff"><a href="https://cursor.sh/hansakoch" target="_blank">cursor.sh/hansakoch</a></span>
+        <span class="muted">Cursor</span><span style="color:#fff"><a href="https://cursor.com/@iamhak" target="_blank">cursor.com/@iamhak</a></span>
       </div>
     </div>
 
