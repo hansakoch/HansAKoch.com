@@ -12,6 +12,11 @@ export const RESUME = {
     github: 'github.com/hansakoch',
     summary:
       'AI Enablement & Automation Architect with 27+ years of digital technology experience. Director & CMO of Iceberg Media (14 years), now building sovereign Ai infrastructure on Cloudflare-first architecture. Early adopter of OpenClaw (Jan 2025, 18.7K → 388K ⭐), organizer of OpenClaw Cebu community. Managing 145+ domains, 160 Google Business Profiles, and autonomous Ai agents running 24/7 across distributed nodes.',
+    locations: {
+      east_coast: { city: 'Wayne', state: 'MI', label: 'Michigan (East Coast ops)' },
+      west_coast: { city: 'San Luis Obispo', state: 'CA', label: 'SLO, California (West Coast ops)' },
+      remote: { city: 'Cebu', state: 'Philippines', label: 'Cebu, PH (Remote ops & abroad)' },
+    },
   },
 
   work: [

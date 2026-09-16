@@ -23,6 +23,19 @@ function packetPrompt(
   const resumeText = resumeForPrompt();
   const desc = (job.description || '').slice(0, 3000);
 
+  // Determine best location based on job
+  const loc = (job.location || '').toLowerCase();
+  let locationContext = '';
+  if (loc.includes('michigan') || loc.includes('detroit') || loc.includes('wayne') || loc.includes('east coast')) {
+    locationContext = 'Based in Wayne, Michigan (East Coast).';
+  } else if (loc.includes('california') || loc.includes('san luis') || loc.includes('slo') || loc.includes('west coast') || loc.includes('san francisco')) {
+    locationContext = 'Based in San Luis Obispo, California (West Coast).';
+  } else if (loc.includes('philippines') || loc.includes('cebu') || loc.includes('remote') || loc.includes('asia') || loc.includes('international')) {
+    locationContext = 'Based in Cebu, Philippines (Remote). Available for US hours.';
+  } else {
+    locationContext = 'US-based with remote capability. Michigan (East Coast), California (West Coast), and Cebu, Philippines.';
+  }
+
   let researchBlock = '';
   if (research) {
     researchBlock = `
@@ -71,6 +84,7 @@ Title: ${job.title}
 Company: ${job.company}
 Location: ${job.location || 'Remote'}
 Description: ${desc}
+Hans's Location: ${locationContext}
 ${researchBlock}${commentBlock}${previousBlock}
 Write two documents:
 

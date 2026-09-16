@@ -104,6 +104,11 @@ const ALLOW_TITLE: RegExp[] = [
   /\bsearch marketing\b/,
   /\bprogrammatic seo\b/,
   /\bcontent seo\b/,
+  /\bproduct marketing\b/,
+  /\bai agents?\b/,
+  /\bagentic\b/,
+  /\bgovernance\b/,
+  /\boptimization\b/,
 ];
 
 const SALES_JD = [
@@ -327,6 +332,25 @@ export function decide(job: JobInput, opts: DecideOpts = {}): Decision {
 
   const base = verdict === 'hot' ? 70 : verdict === 'maybe' ? 48 : 10;
   let score = Math.min(100, base + loc.locScore);
+
+  // Boost for AI/agent relevance in title + description
+  const aiKeywords = /\b(ai|artificial intelligence|agent|agentic|autonomous|llm|machine learning|automation)\b/i;
+  const titleDesc = `${job.title || ''} ${job.description || ''}`.toLowerCase();
+  if (aiKeywords.test(titleDesc)) {
+    score = Math.min(100, score + 15);
+  }
+
+  // Boost for seniority (director, head, vp, lead)
+  const seniority = /\b(director|head|vp|vice president|lead|chief|senior manager)\b/i;
+  if (seniority.test(job.title || '')) {
+    score = Math.min(100, score + 10);
+  }
+
+  // Boost for salary mentions
+  if (/\$[\d,]+/.test(job.description || '')) {
+    score = Math.min(100, score + 5);
+  }
+
   // Foreign-script-heavy but English SEO-clear: keep on board, but do not rank near pure-English SEO tops.
   if (verdict !== 'reject') {
     const raw = `${job.title || ''} ${job.description || ''}`.slice(0, 2500);

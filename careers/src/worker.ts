@@ -491,16 +491,46 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
           .slice(0, 5000);
 
         // Try to extract company name from page content
-        // Greenhouse pattern: "Company Name" in the header or "at Company Name"
-        const greenhouseCompany = pageTitle.match(/(?:at|@)\s+([^-]+?)(?:\s*[-|]|\s*$)/i);
-        if (greenhouseCompany) {
-          company = greenhouseCompany[1].trim();
+        // Look for "at Company" pattern in title
+        const atCompany = pageTitle.match(/(?:at|@)\s+([^-|]+?)(?:\s*[-|]|\s*$)/i);
+        if (atCompany) {
+          company = atCompany[1].trim();
+        }
+
+        // Look for company in meta tags
+        if (!company) {
+          const ogSite = html.match(/<meta[^>]*property="og:site_name"[^>]*content="([^"]+)"/i);
+          if (ogSite) company = ogSite[1].trim();
+        }
+
+        // Look for company in JSON-LD
+        if (!company) {
+          const jsonLd = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi);
+          if (jsonLd) {
+            for (const script of jsonLd) {
+              const content = script.replace(/<\/?script[^>]*>/gi, '');
+              try {
+                const data = JSON.parse(content);
+                if (data.hiringOrganization?.name) {
+                  company = data.hiringOrganization.name;
+                  break;
+                }
+                if (data.name && data['@type'] === 'JobPosting') {
+                  // Use the company from the job posting
+                  if (data.hiringOrganization?.name) {
+                    company = data.hiringOrganization.name;
+                    break;
+                  }
+                }
+              } catch {}
+            }
+          }
         }
 
         // Try to extract job title from page content
         // Look for common patterns
         const jobTitlePatterns = [
-          /(?:^|\n)\s*(?:job title|position|role):\s*(.+?)(?:\n|$)/i,
+          /<script[^>]*type="application\/ld\+json"[^>]*>[\s\S]*?"title"\s*:\s*"([^"]+)"/i,
           /<h1[^>]*>([^<]+)<\/h1>/i,
           /<h2[^>]*>([^<]+)<\/h2>/i,
           /class="[^"]*title[^"]*"[^>]*>([^<]+)</i,
@@ -520,6 +550,7 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
           const companyPatterns = [
             /(?:about|company|employer):\s*([A-Z][^.]{2,40})/i,
             /(?:at|@)\s+([A-Z][^.]{2,40})(?:\s+is\s|\s+in\s|\s*$)/i,
+            /(?:join|work at|work for)\s+([A-Z][^.]{2,40})/i,
           ];
           for (const pattern of companyPatterns) {
             const match = pageContent.match(pattern);
@@ -530,19 +561,30 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
           }
         }
 
-        // Fallback: extract from URL path
-        if (!company) {
+        // Fallback: extract from URL path (but not for job-boards.greenhouse.io)
+        if (!company && !parsed.hostname.includes('job-boards.')) {
           const pathMatch = parsed.pathname.match(/\/([^/]+)\/jobs?\//);
           if (pathMatch) {
             company = pathMatch[1].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
           }
         }
 
-        // Fallback: use hostname
+        // Fallback: use hostname (but not job-boards.greenhouse.io)
         if (!company) {
-          const host = parsed.hostname.replace('www.', '').replace('job-boards.', '').replace('boards.', '');
-          const parts = host.split('.');
-          company = parts[0].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+          let host = parsed.hostname.replace('www.', '');
+          if (host.includes('job-boards.greenhouse.io') || host.includes('boards.greenhouse.io')) {
+            // Try to extract company from URL path
+            const pathMatch = parsed.pathname.match(/^\/([^/]+)/);
+            if (pathMatch) {
+              company = pathMatch[1].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+            } else {
+              company = 'Unknown';
+            }
+          } else {
+            host = host.replace('job-boards.', '').replace('boards.', '');
+            const parts = host.split('.');
+            company = parts[0].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+          }
         }
       }
     } catch {}
@@ -948,9 +990,10 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
       ).bind(DEFAULT_PROFILE.hot_limit).all();
       jobs = results || [];
     } else {
-      // Hot page: all non-applied jobs sorted by score
+      // Hot page: all non-applied jobs sorted by score, excluding research/job board entries
       const { results } = await env.DB.prepare(
         `SELECT * FROM jobs WHERE verdict IN ('hot','maybe') AND status NOT IN ('applied','queued','dropped','thumbs_down','rejected')
+         AND title NOT LIKE 'Research:%' AND title NOT LIKE '%Career Page%'
          ORDER BY score ${sortDir}, updated_at DESC LIMIT ?`,
       ).bind(DEFAULT_PROFILE.hot_limit).all();
       jobs = results || [];
