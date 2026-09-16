@@ -229,35 +229,36 @@ export function templatePacket(job: { title: string; company: string; descriptio
 ${address} · hans@hansakoch.com · ${phone}
 linkedin.com/in/hansakochcom · github.com/hansakoch
 
-PROFESSIONAL SUMMARY
-AI Enablement & Automation Architect with 27+ years building and scaling digital businesses. Director & CMO of Iceberg Media (14 years), managing 145+ domains and 160 Google Business Profiles. Now building autonomous AI agents on Cloudflare-first architecture. Early adopter of OpenClaw (Jan 2025, 18.7K → 388K stars).
-
 EXPERIENCE
 
 AI Systems Architect & Founder — OpenRoyleAl.com (Jan 2025 – Present)
-• Architected sovereign AI infrastructure using Cloudflare Workers, D1, Durable Objects
-• Built multi-node distributed task execution with 6-second average latency
-• Managing 63+ API keys and secrets in D1 with secure tool-based access
-• Built Alfred — sovereign AI assistant with persistent memory
+• Sovereign AI infrastructure on Cloudflare Workers, D1, Durable Objects
+• Multi-node distributed task execution, 6-second average latency
+• 63+ API keys and secrets managed in D1
+• Built Alfred — AI assistant with persistent memory
 
 Agency Director & AI Transition Lead — Iceberg Media (2012 – Present)
-• Led strategic pivot from traditional SEO agency to AI services company
-• Transitioned pricing from £300/month retainers to £20K–£35K enterprise projects
-• Designed Cloudflare-first architecture across 145+ domains
-• Managing 160 Google Business Profiles
-• Built and managed teams of 10+ across US, UK, Philippines
+• Strategic pivot from SEO agency to AI services
+• Pricing transition: £300/month to £20K–£35K enterprise projects
+• Cloudflare-first architecture across 145+ domains
+• 160 Google Business Profiles managed
+• Teams of 10+ across US, UK, Philippines
 
 Head of Digital Strategy — Ajaxx Restoration (2020 – 2024)
-• Secured two US water restoration company contracts
-• Managed $800–$3,500/month per client budgets
-• Remote team leadership across international time zones
+• Two US water restoration company contracts
+• $800–$3,500/month per client budgets
+• Remote team leadership across time zones
+
+President of Search Marketing — Click Eleven (2008 – 2012)
+• Multinational revenue across 3 search products: SEO, ORM, PPC
+• Google Ads MCC for enterprise clients
 
 EDUCATION
 San José State University — Business Administration (2002–2004)
 DeVry University — Computer Science (2001–2003)
 
 SKILLS
-${reqText}, TypeScript, Python, Cloudflare Workers, D1, SEO, AEO/PPC, ORM, Analytics, Team Leadership
+${reqText}, TypeScript, Python, Cloudflare Workers, D1, Durable Objects, Analytics, Team Leadership
 `,
 
     cover_md: `Dear ${company} Hiring Team,
@@ -266,7 +267,7 @@ I am writing regarding the ${title} position. My background spans 27 years in di
 
 At Iceberg Media I built and managed a team of 10 across three countries, running SEO and paid media campaigns for clients in healthcare, legal, financial services, and home services. We manage 145+ domains and 160 Google Business Profiles. I have been hands-on with every aspect of digital operations from the CMS to the ads account to client reporting.
 
-More recently I have been building autonomous systems on Cloudflare infrastructure. This is not theoretical. These are production systems running 24/7, handling research, content operations, and business process automation at scale. I bring a practical engineering mindset to marketing problems.
+More recently I have been building autonomous systems on Cloudflare infrastructure. These are production systems running 24/7, handling research, content operations, and business process automation at scale. I bring a practical engineering mindset to marketing problems.
 
 I work across US, UK, and Philippines time zones and am comfortable with fully remote collaboration. I would welcome a conversation about how my experience fits your needs.
 
