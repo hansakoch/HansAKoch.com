@@ -11,6 +11,9 @@ export type CompanyResearch = {
   culture_notes: string;
   application_questions: string;
   researched_at: string;
+  opportunity_type: string;  // 'job_listing' | 'career_direct'
+  opportunity_title: string; // Actual job title or "Career Direct"
+  score_rationale: string;   // Why this score
 };
 
 /** Try to find the company's main website from a job URL or company name. */
@@ -53,7 +56,10 @@ TASK: Based on the job details above, generate a JSON object with these fields:
 - team_info: any info about team size, structure, culture
 - hiring_manager: name if discoverable, otherwise "Not found"
 - culture_notes: any cultural signals from the job description
-- application_questions: a JSON array of objects with "question" and "answer" fields. Predict the typical questions this company will ask on their application form (e.g. "Why do you want to work here?", "Describe your experience with SEO", "What is your salary expectation?"). Pre-write answers as if you were Hans, based on his background. Keep answers to 2-3 sentences each. Make them sound like a real person wrote them, not a machine.
+- opportunity_type: "job_listing" if this is a specific job posting, "career_direct" if this is a company worth approaching directly (no current listing but good fit)
+- opportunity_title: The actual job title if known (e.g. "SEO Director", "Head of Growth"). If speculative, use format "Company Name - Career Direct"
+- score_rationale: 2-3 sentences explaining why this opportunity scored the way it did (relevance to Hans's skills, location fit, company quality)
+- application_questions: a JSON array of objects with "question" and "answer" fields. Predict the typical questions this company will ask on their application form. Pre-write answers as if you were Hans, based on his background. Keep answers to 2-3 sentences each. Make them sound like a real person wrote them, not a machine.
 
 Return ONLY valid JSON, no markdown.`;
 }
@@ -61,16 +67,17 @@ Return ONLY valid JSON, no markdown.`;
 /** Store research in D1. */
 export async function storeResearch(db: D1Database, r: CompanyResearch): Promise<void> {
   await db.prepare(
-    `INSERT INTO research (job_id, company_url, career_page_url, company_about, company_values, team_info, hiring_manager, culture_notes, application_questions, researched_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO research (job_id, company_url, career_page_url, company_about, company_values, team_info, hiring_manager, culture_notes, application_questions, opportunity_type, opportunity_title, score_rationale, researched_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(job_id) DO UPDATE SET
        company_url=excluded.company_url, career_page_url=excluded.career_page_url,
        company_about=excluded.company_about, company_values=excluded.company_values,
        team_info=excluded.team_info, hiring_manager=excluded.hiring_manager,
        culture_notes=excluded.culture_notes, application_questions=excluded.application_questions,
-       researched_at=excluded.researched_at`,
+       opportunity_type=excluded.opportunity_type, opportunity_title=excluded.opportunity_title,
+       score_rationale=excluded.score_rationale, researched_at=excluded.researched_at`,
   )
-    .bind(r.job_id, r.company_url, r.career_page_url, r.company_about, r.company_values, r.team_info, r.hiring_manager, r.culture_notes, r.application_questions, r.researched_at)
+    .bind(r.job_id, r.company_url, r.career_page_url, r.company_about, r.company_values, r.team_info, r.hiring_manager, r.culture_notes, r.application_questions, r.opportunity_type, r.opportunity_title, r.score_rationale, r.researched_at)
     .run();
 }
 
@@ -111,6 +118,9 @@ export async function generateResearch(
         hiring_manager: parsed.hiring_manager || 'Not found',
         culture_notes: parsed.culture_notes || '',
         application_questions: JSON.stringify(parsed.application_questions || []),
+        opportunity_type: parsed.opportunity_type || 'job_listing',
+        opportunity_title: parsed.opportunity_title || job.title,
+        score_rationale: parsed.score_rationale || '',
         researched_at: now,
       };
     } catch (e: any) {
@@ -129,6 +139,9 @@ export async function generateResearch(
     hiring_manager: 'Not found',
     culture_notes: '',
     application_questions: '[]',
+    opportunity_type: 'job_listing',
+    opportunity_title: job.title,
+    score_rationale: '',
     researched_at: now,
   };
 }

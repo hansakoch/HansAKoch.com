@@ -82,8 +82,10 @@ export function boardPage(jobs: any[], stats: any = {}, filter = '', sort = 'sco
       const help = j.method === 'needs_you' || j.method === 'unknown' || !j.method;
       const emailReview = j.status === 'reviewed';
       const confirmed = j.status === 'applied';
+      const isCareerDirect = (j.title || '').includes('Career Direct') || (j.title || '').includes('Research:');
       return `<div class="card ${j.verdict === 'hot' ? 'hot' : ''}">
         <div><span class="badge ${confirmed ? 'ready' : help ? 'help' : 'ready'}">${confirmed ? 'CONFIRMED' : help ? 'NEEDS YOU' : 'READY'}</span>
+        ${isCareerDirect ? '<span class="badge" style="background:#3a3a1a;color:#facc15">CAREER DIRECT</span>' : ''}
         ${emailReview ? '<span class="badge help">EMAIL</span>' : ''}
         <span class="badge">${esc(j.score)} · ${esc(j.loc_label || '')} · ${esc(j.method || 'unknown')}</span></div>
         <p style="margin:8px 0 4px;color:#fff;font-weight:600">${esc(j.title)}</p>
@@ -116,10 +118,13 @@ export function applyPage(job: any, followUp = '', flash = '', research: any = n
   const researchBlock = research ? `
     <div class="card" style="border-color:#818cf8">
       <h3 style="color:#c7d2fe">Company Research</h3>
+      ${research.opportunity_type === 'career_direct' ? '<p style="color:#facc15;font-weight:600;margin-bottom:8px">CAREER DIRECT — No current listing, but worth approaching directly.</p>' : ''}
+      ${research.opportunity_title && research.opportunity_title !== job.title ? `<p style="color:#fff;font-weight:600;margin-bottom:8px">Opportunity: ${esc(research.opportunity_title)}</p>` : ''}
       <p class="muted"><strong>About:</strong> ${esc(research.company_about)}</p>
       ${research.company_values ? `<p class="muted"><strong>Values:</strong> ${esc(research.company_values)}</p>` : ''}
       ${research.team_info ? `<p class="muted"><strong>Team:</strong> ${esc(research.team_info)}</p>` : ''}
       ${research.culture_notes ? `<p class="muted"><strong>Culture:</strong> ${esc(research.culture_notes)}</p>` : ''}
+      ${research.score_rationale ? `<p style="color:#4ade80;margin-top:8px"><strong>Why this score:</strong> ${esc(research.score_rationale)}</p>` : ''}
       ${research.career_page_url ? `<p><a href="${esc(research.career_page_url)}" target="_blank" rel="noopener">Career page →</a></p>` : ''}
     </div>` : '';
 
