@@ -26,14 +26,31 @@ function packetPrompt(
   // Determine best location based on job
   const loc = (job.location || '').toLowerCase();
   let locationContext = '';
-  if (loc.includes('michigan') || loc.includes('detroit') || loc.includes('wayne') || loc.includes('east coast')) {
-    locationContext = 'Based in Wayne, Michigan (East Coast).';
-  } else if (loc.includes('california') || loc.includes('san luis') || loc.includes('slo') || loc.includes('west coast') || loc.includes('san francisco')) {
-    locationContext = 'Based in San Luis Obispo, California (West Coast).';
-  } else if (loc.includes('philippines') || loc.includes('cebu') || loc.includes('remote') || loc.includes('asia') || loc.includes('international')) {
-    locationContext = 'Based in Cebu, Philippines (Remote). Available for US hours.';
+  let headerLocation = '';
+
+  if (loc.includes('california') || loc.includes('san francisco') || loc.includes('los angeles') || loc.includes('san luis') || loc.includes('santa clara') || loc.includes('bay area') || loc.includes('west coast')) {
+    locationContext = 'Based in San Luis Obispo, California. Available immediately.';
+    headerLocation = 'San Luis Obispo, CA';
+  } else if (loc.includes('michigan') || loc.includes('detroit') || loc.includes('wayne') || loc.includes('ann arbor') || loc.includes('midwest') || loc.includes('east coast') || loc.includes('chicago')) {
+    locationContext = 'Based in Wayne, Michigan. Available immediately.';
+    headerLocation = 'Wayne, MI';
+  } else if (loc.includes('remote') && (loc.includes('anywhere') || loc.includes('worldwide') || loc.includes('global') || loc.includes('international'))) {
+    locationContext = 'Based in Cebu, Philippines. Available for any timezone. US citizen.';
+    headerLocation = 'Cebu, PH';
+  } else if (loc.includes('remote') || loc.includes('anywhere')) {
+    // Default US remote — use Michigan
+    locationContext = 'Based in Wayne, Michigan. Remote US. Available immediately.';
+    headerLocation = 'Wayne, MI';
+  } else if (loc.includes('texas') || loc.includes('austin') || loc.includes('dallas') || loc.includes('houston')) {
+    locationContext = 'Based in Wayne, Michigan. Open to relocation or remote.';
+    headerLocation = 'Wayne, MI';
+  } else if (loc.includes('philippines') || loc.includes('cebu') || loc.includes('asia') || loc.includes('singapore') || loc.includes('uk') || loc.includes('london')) {
+    locationContext = 'Based in Cebu, Philippines. Available for any timezone.';
+    headerLocation = 'Cebu, PH';
   } else {
-    locationContext = 'US-based with remote capability. Michigan (East Coast), California (West Coast), and Cebu, Philippines.';
+    // Unknown location — use Michigan as default
+    locationContext = 'US-based. Wayne, Michigan. Remote capable.';
+    headerLocation = 'Wayne, MI';
   }
 
   let researchBlock = '';
@@ -76,6 +93,7 @@ Rules:
 - Be specific. Name the tools, the numbers, the outcomes.
 - If the cover letter is 4 paragraphs, that's fine. If it's 3, also fine. Don't pad.
 - NEVER use placeholders like [X], [specific area], [company name], [years]. Use actual data from Hans's background.
+- In the resume header, use ONLY this location: ${headerLocation}. Do NOT list all three locations.
 
 HANS'S CAREER TIMELINE (use these EXACTLY, do not combine):
 - 27+ years in digital marketing (since 1999)
@@ -93,6 +111,7 @@ Title: ${job.title}
 Company: ${job.company}
 Location: ${job.location || 'Remote'}
 Description: ${desc}
+Resume header location: ${headerLocation}
 Hans's Location: ${locationContext}
 ${researchBlock}${commentBlock}${previousBlock}
 Write two documents:
