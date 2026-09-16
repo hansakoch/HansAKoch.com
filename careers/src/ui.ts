@@ -551,7 +551,7 @@ export function reviewPage(items: { id: string; section: string; current: string
     'Review — Open Careers',
     `<div style="margin-bottom:16px">
       <h2 style="font-size:20px;margin-bottom:8px">LinkedIn Profile Updates</h2>
-      <p class="muted">Review each section. Check the ones you approve, then submit.</p>
+      <p class="muted">Review each section. Add comments to guide me. Check what you approve.</p>
       ${pending > 0 ? `<div class="card flash" style="border-color:#ff4444;background:#3a1a1a"><strong style="color:#f87171">${pending} items need your review</strong></div>` : '<div class="card" style="border-color:#4ade80"><strong style="color:#86efac">All reviewed</strong></div>'}
     </div>
     <form method="post" action="/api/review/approve">
@@ -571,12 +571,15 @@ export function reviewPage(items: { id: string; section: string; current: string
                   <pre style="font-size:12px;color:#4ade80;max-height:150px;overflow:auto">${esc(item.proposed)}</pre>
                 </div>
               </div>
+              <div style="margin-top:8px">
+                <textarea name="comment_${esc(item.id)}" rows="2" placeholder="Add feedback: 'make it shorter', 'add more detail', 'change tone'..." style="width:100%;background:#0a0a0a;border:1px solid #333;color:#fff;padding:8px;border-radius:6px;font-size:13px"></textarea>
+              </div>
             </div>
           </div>
         </div>
       `).join('')}
       <div class="row" style="margin-top:16px">
-        <button class="btn pri" type="submit" style="font-size:16px;padding:14px 24px">Apply Approved Changes</button>
+        <button class="btn pri" type="submit" style="font-size:16px;padding:14px 24px">Submit Review</button>
       </div>
     </form>`
   );

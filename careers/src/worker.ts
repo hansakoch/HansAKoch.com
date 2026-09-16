@@ -250,13 +250,23 @@ function submitWatch(method: string, env: Env): { watch: string; nextStatus: str
 }
 
 async function hotJobs(env: Env, limit: number) {
+  // Deduplicate: max 2 jobs per company, pick highest scored
   const { results } = await env.DB.prepare(
     `SELECT * FROM jobs WHERE verdict IN ('hot','maybe') AND status NOT IN ('dropped','thumbs_down')
-     ORDER BY CASE verdict WHEN 'hot' THEN 0 ELSE 1 END, score DESC, updated_at DESC LIMIT ?`,
-  )
-    .bind(limit)
-    .all();
-  return results || [];
+     AND title NOT LIKE 'Research:%' AND title NOT LIKE '%Career Page%'
+     ORDER BY company, score DESC`
+  ).all();
+
+  const companyCount: Record<string, number> = [];
+  const deduped: any[] = [];
+  for (const job of results || []) {
+    const company = (job.company || 'unknown').toLowerCase();
+    companyCount[company] = (companyCount[company] || 0) + 1;
+    if (companyCount[company] <= 2) {
+      deduped.push(job);
+    }
+  }
+  return deduped.slice(0, limit);
 }
 
 async function handleApi(request: Request, env: Env, url: URL): Promise<Response | null> {
@@ -658,6 +668,20 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
       return Response.redirect(new URL(`/apply/${result.id}`, url).toString(), 302);
     }
     return json({ success: true, title: finalTitle, company: finalCompany, ...result });
+  }
+
+  // Review: handle form submission with comments
+  if (p === '/api/review/approve' && method === 'POST') {
+    const body = await readBody(request);
+    const approved = Array.isArray(body.approved) ? body.approved : [body.approved].filter(Boolean);
+    const comments: Record<string, string> = {};
+    for (const [key, value] of Object.entries(body)) {
+      if (key.startsWith('comment_') && value) {
+        comments[key.replace('comment_', '')] = String(value);
+      }
+    }
+    await event(env, null, 'review-submit', `approved=${approved.length} comments=${Object.keys(comments).length}`);
+    return Response.redirect(new URL('/review?submitted=1', url).toString(), 302);
   }
 
   // Training questions API
