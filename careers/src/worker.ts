@@ -976,6 +976,10 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     ).all();
     return new Response(onboardingPage(items, trainingQuestions || [], pendingTasks), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
+
+  if (url.pathname === '/me') {
+    return new Response(mePage(), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  }
   const apply = url.pathname.match(/^\/apply\/([^/]+)$/);
   if (apply) {
     const job = await env.DB.prepare('SELECT * FROM jobs WHERE id = ?').bind(apply[1]).first<any>();

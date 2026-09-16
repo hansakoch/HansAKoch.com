@@ -32,7 +32,7 @@ details .detail{padding:8px 12px;border-left:3px solid #333;margin:4px 0}
 </style></head><body>
 <div class="top"><div class="wrap">
 <h1>Open Careers</h1>
-<p class="muted">${authed ? `<a href="/">Hot</a> · <a href="/apply">Apply</a> · <a href="/tasks" ${pendingTasks > 0 ? 'class="flash" style="color:#ff4444;font-weight:700"' : ''}>Tasks${pendingTasks > 0 ? ` (${pendingTasks})` : ''}</a> · <a href="/search">Search</a>` : 'Private tenant board'}</p>
+<p class="muted">${authed ? `<a href="/">Hot</a> · <a href="/apply">Apply</a> · <a href="/tasks" ${pendingTasks > 0 ? 'class="flash" style="color:#ff4444;font-weight:700"' : ''}>Tasks${pendingTasks > 0 ? ` (${pendingTasks})` : ''}</a> · <a href="/search">Search</a> · <a href="/me">Me</a>` : 'Private tenant board'}</p>
 </div></div>
 <div class="wrap">${body}</div>
 </body></html>`;
@@ -326,6 +326,115 @@ export type SearchStatus = {
   adapter?: string;
   detail?: string;
 };
+
+export function mePage() {
+  return layout(
+    'Me — Open Careers',
+    `<div class="card" style="border-color:#818cf8">
+      <h3 style="color:#c7d2fe;margin-bottom:12px">Profile</h3>
+      <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:14px">
+        <span class="muted">Name</span><span style="color:#fff">Hans Al Koch (HAK)</span>
+        <span class="muted">Email</span><span style="color:#fff">hans@hansakoch.com</span>
+        <span class="muted">LinkedIn</span><span style="color:#fff">linkedin.com/in/hansakochcom</span>
+        <span class="muted">GitHub</span><span style="color:#fff">github.com/hansakoch</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px">Locations & Phones</h3>
+      <div style="display:grid;gap:12px">
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;padding:8px;border:1px solid #333;border-radius:6px">
+          <div><strong style="color:#fff">Wayne, Michigan</strong><br><span class="muted">East Coast / Midwest / US Remote / Canada</span></div>
+          <div style="text-align:right"><span style="color:#4ade80">+1 (313) 355-8675</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;padding:8px;border:1px solid #333;border-radius:6px">
+          <div><strong style="color:#fff">San Luis Obispo, California</strong><br><span class="muted">West Coast / California / Bay Area</span></div>
+          <div style="text-align:right"><span style="color:#4ade80">+1 (415) 683-1016</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;padding:8px;border:1px solid #333;border-radius:6px">
+          <div><strong style="color:#fff">Manchester, UK</strong><br><span class="muted">UK / Europe</span></div>
+          <div style="text-align:right"><span style="color:#4ade80">+44 7882 517 454</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;padding:8px;border:1px solid #333;border-radius:6px">
+          <div><strong style="color:#fff">Cebu, Philippines</strong><br><span class="muted">APAC / Middle East / Remote Anywhere</span></div>
+          <div style="text-align:right"><span style="color:#4ade80">+63 976 303 0566</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px">General Resume</h3>
+      <pre style="font-size:13px;color:#ccc;max-height:400px;overflow:auto">${RESUME_MASTER}</pre>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px">Notes for Packets</h3>
+      <p class="muted" style="margin-bottom:8px">These notes are included in every packet generation. Use them to ensure accuracy.</p>
+      <form method="post" action="/api/me/notes">
+        <textarea name="notes" rows="4" placeholder="e.g., 'Use Hans Al Koch (HAK) not HANS AL KOCH', 'Never mention quota or sales', 'Emphasize agent work over SEO'..."></textarea>
+        <div class="row" style="margin-top:8px"><button class="btn pri" type="submit">Save notes</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px">Location Rules</h3>
+      <p class="muted">How the system picks your address for each job:</p>
+      <ul class="muted" style="margin:8px 0 0 20px;line-height:1.8">
+        <li><strong>California / West Coast</strong> → SLO, CA</li>
+        <li><strong>Michigan / East Coast / Midwest</strong> → Wayne, MI</li>
+        <li><strong>Remote US</strong> → Wayne, MI</li>
+        <li><strong>Canada</strong> → Wayne, MI (open to relocation)</li>
+        <li><strong>UK / Europe</strong> → Manchester, UK</li>
+        <li><strong>APAC / Middle East / Egypt</strong> → Cebu, PH</li>
+        <li><strong>Remote Anywhere / Worldwide</strong> → Cebu, PH</li>
+        <li><strong>Italy</strong> → Asti, Italy (when number available)</li>
+      </ul>
+    </div>`,
+  );
+}
+
+const RESUME_MASTER = `Hans Al Koch (HAK)
+Wayne, MI · hans@hansakoch.com · +1 (313) 355-8675
+linkedin.com/in/hansakochcom · github.com/hansakoch
+
+SUMMARY
+AI Enablement & Automation Architect with 27+ years in digital marketing. Director & CMO of Iceberg Media (14 years). Managing 145+ domains and 160 Google Business Profiles. Building autonomous AI agents on Cloudflare. Early adopter of OpenClaw (Jan 2025, 18.7K to 388K stars).
+
+EXPERIENCE
+
+AI Systems Architect & Founder — OpenRoyleAl.com (Jan 2025 – Present)
+• Sovereign AI infrastructure on Cloudflare Workers, D1, Durable Objects
+• Multi-node distributed task execution, 6-second average latency
+• 63+ API keys and secrets managed in D1
+• Built Alfred — AI assistant with persistent memory
+
+Agency Director & AI Transition Lead — Iceberg Media (2012 – Present)
+• Strategic pivot from SEO agency to AI services
+• Pricing transition: £300/month to £20K–£35K enterprise projects
+• Cloudflare-first architecture across 145+ domains
+• 160 Google Business Profiles managed
+• Teams of 10+ across US, UK, Philippines
+
+Head of Digital Strategy — Ajaxx Restoration (2020 – 2024)
+• Two US water restoration company contracts
+• $800–$3,500/month per client budgets
+• Remote team leadership across time zones
+
+President of Search Marketing — Click Eleven (2008 – 2012)
+• Multinational revenue across 3 search products: SEO, ORM, PPC
+• Google Ads MCC for enterprise clients
+
+BPO Country Manager — Dyomo.com / TrafficSupport.net (2007 – 2011)
+• SEO, call center, admin across US/India/Philippines
+• 95 staff, 6 sub-brands
+• Custom LMS with 300+ hours of training
+
+EDUCATION
+San José State University — Business Administration (2002–2004)
+DeVry University — Computer Science (2001–2003)
+
+SKILLS
+SEO, AEO, GEO, PPC, ORM, Growth Marketing, TypeScript, Python, Cloudflare Workers, D1, Durable Objects, Analytics, Team Leadership`;
 
 export function searchPage(queries: { term: string; location: string }[], status?: SearchStatus, pendingTasks = 0) {
   const q = queries.map((x, i) => `<li style="margin:4px 0;display:flex;gap:8px;align-items:center">

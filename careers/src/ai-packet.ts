@@ -106,7 +106,8 @@ Rules:
 - If the cover letter is 4 paragraphs, that's fine. If it's 3, also fine. Don't pad.
 - NEVER use placeholders like [X], [specific area], [company name], [years]. Use actual data from Hans's background.
 - In the resume header, use ONLY this location: ${headerLocation}. Do NOT list all three locations.
-- Phone numbers by location: Wayne MI → +1 (313) 355-8675, SLO CA → +1 (415) 683-1016, Manchester UK → +44 7882 517 454, Cebu PH → +63 976 303 0566, Asti Italy → (coming soon)
+- Name format: "Hans Al Koch (HAK)" — not "HANS AL KOCH"
+- Phone numbers by location: Wayne MI → +1 (313) 355-8675, SLO CA → +1 (415) 683-1016, Manchester UK → +44 7882 517 454, Cebu PH → +63 976 303 0566
 - Resume must be COMPREHENSIVE (15-20+ lines). Include: Professional Summary, Target Role, Relevant Skills, Experience (3-4 roles with bullet points), Education, Projects.
 - Cover letter must be 3-4 paragraphs, tailored to the specific company and role. Reference their values/culture if known.
 - NEVER write "NOTES FROM THE JD: See listing" — that's garbage. If you have the job description, reference specific requirements.
@@ -224,7 +225,7 @@ export function templatePacket(job: { title: string; company: string; descriptio
   const reqText = requirements.length > 0 ? requirements.join(', ') : 'Digital Marketing, SEO, Growth';
 
   return {
-    resume_md: `HANS AL KOCH
+    resume_md: `Hans Al Koch (HAK)
 ${address} · hans@hansakoch.com · ${phone}
 linkedin.com/in/hansakochcom · github.com/hansakoch
 

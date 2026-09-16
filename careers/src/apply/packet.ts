@@ -9,7 +9,7 @@ export function fillDocs(job: {
   const loc = job.location || 'remote';
   const desc = String(job.description || '').slice(0, 900);
 
-  const resume_md = `HANS AL KOCH
+  const resume_md = `Hans Al Koch (HAK)
 Wayne, MI · Cebu, PH · hans@hansakoch.com
 linkedin.com/in/hansakochcom
 
