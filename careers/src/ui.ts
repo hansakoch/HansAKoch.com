@@ -392,6 +392,7 @@ BPO Country Manager — Dyomo.com / TrafficSupport.net (2007 – 2011)
 
 EDUCATION
 San José State University — Business Administration (2002–2004)
+De Anza College, Cupertino — Undergraduate (2004–2005)
 DeVry University — Computer Science (2001–2003)
 
 SKILLS

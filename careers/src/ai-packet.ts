@@ -268,6 +268,7 @@ President of Search Marketing — Click Eleven (2008 – 2012)
 
 EDUCATION
 San José State University — Business Administration (2002–2004)
+De Anza College, Cupertino — Undergraduate (2004–2005)
 DeVry University — Computer Science (2001–2003)
 
 SKILLS
