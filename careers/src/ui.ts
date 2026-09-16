@@ -87,7 +87,9 @@ export function boardPage(jobs: any[], stats: any = {}, filter = '', sort = 'sco
         <div><span class="badge ${confirmed ? 'ready' : help ? 'help' : 'ready'}">${confirmed ? 'CONFIRMED' : help ? 'NEEDS YOU' : 'READY'}</span>
         ${isCareerDirect ? '<span class="badge" style="background:#3a3a1a;color:#facc15">CAREER DIRECT</span>' : ''}
         ${emailReview ? '<span class="badge help">EMAIL</span>' : ''}
-        <span class="badge">${esc(j.score)} · ${esc(j.loc_label || '')} · ${esc(j.method || 'unknown')}</span></div>
+        <span class="badge">${esc(j.score)} · ${esc(j.loc_label || '')} · ${esc(j.method || 'unknown')}</span>
+        ${j.scheduled_at ? `<span class="badge" style="background:#1a1a3a;color:#a78bfa">${new Date(j.scheduled_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>` : ''}
+        ${j.updated_at && confirmed ? `<span class="badge" style="background:#0a2a1a;color:#4ade80">${new Date(j.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>` : ''}</div>
         <p style="margin:8px 0 4px;color:#fff;font-weight:600">${esc(j.title)}</p>
         <p class="muted">${esc(j.company || 'Unknown')} · ${esc(j.location || '')}</p>
         <div class="row">
@@ -327,6 +329,49 @@ export type SearchStatus = {
   detail?: string;
 };
 
+const RESUME_MASTER = `Hans Al Koch (HAK)
+Wayne, MI · hans@hansakoch.com · +1 (313) 355-8675
+linkedin.com/in/hansakochcom · github.com/hansakoch
+
+SUMMARY
+AI Enablement & Automation Architect with 27+ years in digital marketing. Director & CMO of Iceberg Media (14 years). Managing 145+ domains and 160 Google Business Profiles. Building autonomous AI agents on Cloudflare. Early adopter of OpenClaw (Jan 2025, 18.7K to 388K stars).
+
+EXPERIENCE
+
+AI Systems Architect & Founder — OpenRoyleAl.com (Jan 2025 – Present)
+• Sovereign AI infrastructure on Cloudflare Workers, D1, Durable Objects
+• Multi-node distributed task execution, 6-second average latency
+• 63+ API keys and secrets managed in D1
+• Built Alfred — AI assistant with persistent memory
+
+Agency Director & AI Transition Lead — Iceberg Media (2012 – Present)
+• Strategic pivot from SEO agency to AI services
+• Pricing transition: £300/month to £20K–£35K enterprise projects
+• Cloudflare-first architecture across 145+ domains
+• 160 Google Business Profiles managed
+• Teams of 10+ across US, UK, Philippines
+
+Head of Digital Strategy — Ajaxx Restoration (2020 – 2024)
+• Two US water restoration company contracts
+• $800–$3,500/month per client budgets
+• Remote team leadership across time zones
+
+President of Search Marketing — Click Eleven (2008 – 2012)
+• Multinational revenue across 3 search products: SEO, ORM, PPC
+• Google Ads MCC for enterprise clients
+
+BPO Country Manager — Dyomo.com / TrafficSupport.net (2007 – 2011)
+• SEO, call center, admin across US/India/Philippines
+• 95 staff, 6 sub-brands
+• Custom LMS with 300+ hours of training
+
+EDUCATION
+San José State University — Business Administration (2002–2004)
+DeVry University — Computer Science (2001–2003)
+
+SKILLS
+SEO, AEO, GEO, PPC, ORM, Growth Marketing, TypeScript, Python, Cloudflare Workers, D1, Durable Objects, Analytics, Team Leadership`;
+
 export function mePage() {
   return layout(
     'Me — Open Careers',
@@ -393,51 +438,8 @@ export function mePage() {
   );
 }
 
-const RESUME_MASTER = `Hans Al Koch (HAK)
-Wayne, MI · hans@hansakoch.com · +1 (313) 355-8675
-linkedin.com/in/hansakochcom · github.com/hansakoch
-
-SUMMARY
-AI Enablement & Automation Architect with 27+ years in digital marketing. Director & CMO of Iceberg Media (14 years). Managing 145+ domains and 160 Google Business Profiles. Building autonomous AI agents on Cloudflare. Early adopter of OpenClaw (Jan 2025, 18.7K to 388K stars).
-
-EXPERIENCE
-
-AI Systems Architect & Founder — OpenRoyleAl.com (Jan 2025 – Present)
-• Sovereign AI infrastructure on Cloudflare Workers, D1, Durable Objects
-• Multi-node distributed task execution, 6-second average latency
-• 63+ API keys and secrets managed in D1
-• Built Alfred — AI assistant with persistent memory
-
-Agency Director & AI Transition Lead — Iceberg Media (2012 – Present)
-• Strategic pivot from SEO agency to AI services
-• Pricing transition: £300/month to £20K–£35K enterprise projects
-• Cloudflare-first architecture across 145+ domains
-• 160 Google Business Profiles managed
-• Teams of 10+ across US, UK, Philippines
-
-Head of Digital Strategy — Ajaxx Restoration (2020 – 2024)
-• Two US water restoration company contracts
-• $800–$3,500/month per client budgets
-• Remote team leadership across time zones
-
-President of Search Marketing — Click Eleven (2008 – 2012)
-• Multinational revenue across 3 search products: SEO, ORM, PPC
-• Google Ads MCC for enterprise clients
-
-BPO Country Manager — Dyomo.com / TrafficSupport.net (2007 – 2011)
-• SEO, call center, admin across US/India/Philippines
-• 95 staff, 6 sub-brands
-• Custom LMS with 300+ hours of training
-
-EDUCATION
-San José State University — Business Administration (2002–2004)
-DeVry University — Computer Science (2001–2003)
-
-SKILLS
-SEO, AEO, GEO, PPC, ORM, Growth Marketing, TypeScript, Python, Cloudflare Workers, D1, Durable Objects, Analytics, Team Leadership`;
-
 export function searchPage(queries: { term: string; location: string }[], status?: SearchStatus, pendingTasks = 0) {
-  const q = queries.map((x, i) => `<li style="margin:4px 0;display:flex;gap:8px;align-items:center">
+  const q = queries.map((x) => `<li style="margin:4px 0;display:flex;gap:8px;align-items:center">
     <span style="color:#ccc;flex:1">${esc(x.term)} · ${esc(x.location)}</span>
   </li>`).join('');
   let banner = '';

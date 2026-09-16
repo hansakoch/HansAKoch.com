@@ -6,7 +6,7 @@ import { digestHtml, digestText, classifyInbound, sendDigestMail, type HotJob } 
 import { remember, reportOral, standingBrief } from './oral.ts';
 import { PROBE_PERSONA, suggestMethod } from './apply/atlas.ts';
 import { snapshotPacket } from './artifacts.ts';
-import { applyPage, boardPage, layout, loginPage, onboardingPage, searchPage } from './ui.ts';
+import { applyPage, boardPage, layout, loginPage, mePage, onboardingPage, searchPage } from './ui.ts';
 import { followUpDraft } from './apply/followup.ts';
 import { jobsFromRss } from './search/rss.ts';
 import { parseJobFromEmail, EMAIL_ARCHIVE_NOTE } from './search/email-ingest.ts';
