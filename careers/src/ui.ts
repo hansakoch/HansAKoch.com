@@ -172,7 +172,33 @@ export function applyPage(job: any, followUp = '', flash = '', research: any = n
       <p class="muted">${esc(job.company)} · ${esc(job.location)}</p>
       ${job.url ? `<p><a href="${esc(job.url)}" target="_blank" rel="noopener">View original →</a></p>` : ''}
       ${video ? '<p class="muted">This listing wants a video or custom essay. Download the packet, record, then the agent continues.</p>' : ''}
-      ${submitted ? `<div class="card" style="border-color:#4ade80"><p style="color:#bbf7d0">Submitted${job.scheduled_at ? `. Scheduled for ${new Date(job.scheduled_at).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}` : ''}. You will be notified when the application is confirmed.</p></div>` : ''}
+      ${submitted && job.scheduled_at ? `<div class="card" style="border-color:#a78bfa">
+        <h3 style="color:#c7d2fe">Scheduled to Apply</h3>
+        <p style="font-size:24px;font-weight:700;color:#fff;margin:8px 0" id="countdown"></p>
+        <p class="muted">Local time at ${esc(job.company || 'company')}: <span id="company-time"></span></p>
+        <p class="muted" style="font-size:12px">Scheduled: ${new Date(job.scheduled_at).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}</p>
+      </div>
+      <script>
+        (function(){
+          var target = new Date("${job.scheduled_at}").getTime();
+          function update(){
+            var now = Date.now();
+            var diff = target - now;
+            if(diff <= 0){
+              document.getElementById("countdown").textContent = "APPLYING NOW";
+              document.getElementById("company-time").textContent = new Date().toLocaleTimeString();
+              return;
+            }
+            var h = Math.floor(diff/3600000);
+            var m = Math.floor((diff%3600000)/60000);
+            var s = Math.floor((diff%60000)/1000);
+            document.getElementById("countdown").textContent = h+"h "+m+"m "+s+"s";
+            document.getElementById("company-time").textContent = new Date().toLocaleTimeString();
+            setTimeout(update, 1000);
+          }
+          update();
+        })();
+      </script>` : submitted ? `<div class="card" style="border-color:#4ade80"><p style="color:#bbf7d0">Submitted. You will be notified when confirmed.</p></div>` : ''}
       <div class="row">
         <form method="post" action="/api/jobs/${esc(job.id)}/approve"><button class="btn">${approved ? 'Re-approve' : 'Approve packet'}</button></form>
         ${approved && research?.career_page_url ? `<form method="post" action="/api/jobs/${esc(job.id)}/apply"><button class="btn pri">Apply via company site</button></form>` : ''}
