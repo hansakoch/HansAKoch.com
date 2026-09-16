@@ -192,10 +192,10 @@ export function applyPage(job: any, followUp = '', flash = '', research: any = n
       </form>
     </div>
     ${followUp ? `<div class="card"><h3>Follow-up (unsent)</h3><pre>${esc(followUp)}</pre></div>` : ''}
-    <div class="card"><h3>Cover Letter</h3><pre>${esc(job.cover_md || '(packet generating...)')}</pre></div>
-    <div class="card"><h3>Resume</h3><pre>${esc(job.resume_md || '(packet generating...)')}</pre></div>
+    <div class="card"><h3>Cover Letter</h3><pre>${job.cover_md || '(packet generating...)'}</pre></div>
+    <div class="card"><h3>Resume</h3><pre>${job.resume_md || '(packet generating...)'}</pre></div>
     ${versionsBlock}
-    <div class="card"><h3>Listing notes</h3><pre>${esc((job.description || '').slice(0, 2000))}</pre></div>`,
+    <div class="card"><h3>Listing notes</h3><pre>${(job.description || '').slice(0, 2000)}</pre></div>`,
     true,
     pendingTasks,
   );
