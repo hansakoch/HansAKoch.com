@@ -76,7 +76,14 @@ Rules:
 - Be specific. Name the tools, the numbers, the outcomes.
 - If the cover letter is 4 paragraphs, that's fine. If it's 3, also fine. Don't pad.
 - NEVER use placeholders like [X], [specific area], [company name], [years]. Use actual data from Hans's background.
-- If asked about years of experience, use "27+ years" in digital marketing, "14 years" as Director/CMO.
+
+HANS'S CAREER TIMELINE (use these EXACTLY, do not combine):
+- 27+ years in digital marketing (since 1999)
+- 14 years as Director/CMO of Iceberg Media (2012-present)
+- Building autonomous AI agents on Cloudflare since January 2025
+- Early adopter of OpenClaw (started Jan 2025 at 18.7K stars, now 388K+)
+
+These are SEPARATE facts. Do NOT write "14 years building AI agents since 2025" — that's wrong.
 
 HANS'S BACKGROUND:
 ${resumeText}

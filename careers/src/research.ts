@@ -40,40 +40,12 @@ export const CAREER_PATHS = [
 
 /** Build research prompt for AI. */
 export function researchPrompt(job: { title: string; company: string; description?: string; url?: string }): string {
-  const desc = (job.description || '').slice(0, 3000);
-  return `You are researching a company for a job application. Extract key information from the ACTUAL JOB LISTING content.
+  const desc = (job.description || '').slice(0, 800);
+  return `Job: ${job.title} at ${job.company}. ${desc}
 
-JOB DETAILS:
-Title: ${job.title}
-Company: ${job.company}
-URL: ${job.url || 'unknown'}
-Description/Content: ${desc}
+Hans: 27yr digital marketing, 14yr CMO Iceberg Media, AI agents since 2025, SEO/AEO/PPC.
 
-TASK: Based on the ACTUAL CONTENT above (not generic assumptions), generate a JSON object with these fields:
-- company_url: best guess at the company's main website URL (from the content, not the domain)
-- career_page_url: best guess at their careers/jobs page (from the content)
-- company_about: 2-3 sentences about what the company does (from the content, not generic)
-- company_values: their stated values or mission (from the content)
-- team_info: any info about team size, structure, culture (from the content)
-- hiring_manager: name if discoverable from content, otherwise "Not found"
-- culture_notes: any cultural signals from the content
-- opportunity_type: "job_listing" if this is a specific job posting, "career_direct" if this is a company worth approaching directly (no current listing but good fit)
-- opportunity_title: The ACTUAL job title from the content (e.g. "SEO Director", "Head of Growth"). Do NOT use the URL domain as the title.
-- score_rationale: 2-3 sentences explaining why this opportunity scores the way it did (relevance to Hans's skills, location fit, company quality)
-- application_questions: a JSON array of objects with "question" and "answer" fields. Predict the typical questions this company will ask based on the ACTUAL JOB LISTING. Pre-write answers as if you were Hans, using his ACTUAL data:
-  * 27+ years digital marketing experience
-  * 14 years Director/CMO of Iceberg Media
-  * 145+ domains, 160 Google Business Profiles
-  * Building autonomous AI agents on Cloudflare since 2025
-  * Early adopter of OpenClaw (Jan 2025, 18.7K → 388K stars)
-  * SEO/AEO/PPC/ORM expertise
-  * TypeScript, Python, Cloudflare Workers, D1
-  * Teams of 10+ across US, UK, Philippines
-  DO NOT use placeholders like [X] or [specific area]. Use actual numbers and details.
-
-IMPORTANT: Use the ACTUAL CONTENT from the job listing. Do NOT make generic assumptions. If the content says "Axios" is the company, use "Axios" — not "Job Boards" from the URL domain.
-
-Return ONLY valid JSON, no markdown.`;
+JSON: {"company_about":"...","score_rationale":"...","opportunity_title":"...","application_questions":[{"question":"...","answer":"..."}]}`;
 }
 
 /** Store research in D1. */
@@ -109,7 +81,7 @@ export async function generateResearch(
     try {
       const response = await env.AI.run('@cf/meta/llama-3.2-3b-instruct', {
         messages: [
-          { role: 'system', content: 'You are a company research assistant. Return only valid JSON.' },
+          { role: 'system', content: 'You are a company research assistant. Return only valid JSON. Use Hans\'s actual data precisely:\n- 27+ years in digital marketing (since 1999)\n- 14 years as Director/CMO of Iceberg Media (2012-present)\n- Building AI agents on Cloudflare since January 2025\n- These are SEPARATE facts. Do NOT combine them into one sentence like "14 years building AI agents since 2025".' },
           { role: 'user', content: researchPrompt(job) },
         ],
         max_tokens: 1024,
@@ -137,6 +109,7 @@ export async function generateResearch(
       };
     } catch (e: any) {
       console.error('AI research error:', e?.message || String(e));
+      // Fall through to template
     }
   }
 
