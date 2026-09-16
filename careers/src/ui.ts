@@ -544,3 +544,40 @@ export function searchPage(queries: { term: string; location: string }[], status
     pendingTasks,
   );
 }
+
+export function reviewPage(items: { id: string; section: string; current: string; proposed: string; approved: boolean }[]) {
+  const pending = items.filter(i => !i.approved).length;
+  return layout(
+    'Review — Open Careers',
+    `<div style="margin-bottom:16px">
+      <h2 style="font-size:20px;margin-bottom:8px">LinkedIn Profile Updates</h2>
+      <p class="muted">Review each section. Check the ones you approve, then submit.</p>
+      ${pending > 0 ? `<div class="card flash" style="border-color:#ff4444;background:#3a1a1a"><strong style="color:#f87171">${pending} items need your review</strong></div>` : '<div class="card" style="border-color:#4ade80"><strong style="color:#86efac">All reviewed</strong></div>'}
+    </div>
+    <form method="post" action="/api/review/approve">
+      ${items.map(item => `
+        <div class="card" style="border-color:${item.approved ? '#4ade80' : '#333'}">
+          <div style="display:flex;align-items:flex-start;gap:12px">
+            <input type="checkbox" name="approved" value="${esc(item.id)}" ${item.approved ? 'checked' : ''} style="width:20px;height:20px;margin-top:4px;accent-color:#ff4444"/>
+            <div style="flex:1">
+              <h3 style="color:#fff;margin-bottom:8px">${esc(item.section)}</h3>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                  <p class="muted" style="font-size:11px;margin-bottom:4px">CURRENT</p>
+                  <pre style="font-size:12px;color:#888;max-height:150px;overflow:auto">${esc(item.current)}</pre>
+                </div>
+                <div>
+                  <p class="muted" style="font-size:11px;margin-bottom:4px">PROPOSED</p>
+                  <pre style="font-size:12px;color:#4ade80;max-height:150px;overflow:auto">${esc(item.proposed)}</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+      <div class="row" style="margin-top:16px">
+        <button class="btn pri" type="submit" style="font-size:16px;padding:14px 24px">Apply Approved Changes</button>
+      </div>
+    </form>`
+  );
+}

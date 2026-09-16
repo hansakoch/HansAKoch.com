@@ -6,7 +6,7 @@ import { digestHtml, digestText, classifyInbound, sendDigestMail, type HotJob } 
 import { remember, reportOral, standingBrief } from './oral.ts';
 import { PROBE_PERSONA, suggestMethod } from './apply/atlas.ts';
 import { snapshotPacket } from './artifacts.ts';
-import { applyPage, boardPage, layout, loginPage, mePage, onboardingPage, searchPage } from './ui.ts';
+import { applyPage, boardPage, layout, loginPage, mePage, onboardingPage, reviewPage, searchPage } from './ui.ts';
 import { followUpDraft } from './apply/followup.ts';
 import { jobsFromRss } from './search/rss.ts';
 import { parseJobFromEmail, EMAIL_ARCHIVE_NOTE } from './search/email-ingest.ts';
@@ -36,6 +36,7 @@ export interface Env {
   MAIL_WEBHOOK_URL?: string;
   LINKEDIN_CLIENT_ID?: string;
   LINKEDIN_CLIENT_SECRET?: string;
+  LINKEDIN_LI_AT?: string;
 }
 
 const COOKIE = 'oc_auth';
@@ -765,6 +766,55 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     return json({ success: true, connected: true, expires_at: token.expires_at });
   }
 
+  // LinkedIn: scrape profile page via Browser Run with session cookie
+  if (p === '/api/linkedin/scrape' && method === 'POST') {
+    if (!env.BROWSER) return json({ success: false, error: 'Browser Run not bound' }, 500);
+    if (!env.LINKEDIN_LI_AT) return json({ success: false, error: 'LinkedIn cookie not configured' }, 500);
+    try {
+      const puppeteer = await import('@cloudflare/puppeteer');
+      const browser = await puppeteer.default.launch(env.BROWSER);
+      const page = await browser.newPage();
+
+      // Set LinkedIn session cookie
+      await page.setCookie({
+        name: 'li_at',
+        value: env.LINKEDIN_LI_AT,
+        domain: '.linkedin.com',
+        path: '/',
+        httpOnly: true,
+        secure: true,
+      });
+
+      await page.goto('https://www.linkedin.com/in/hansakochcom/', { waitUntil: 'networkidle0', timeout: 30000 });
+
+      // Extract profile data from the rendered page
+      const profileData = await page.evaluate(() => {
+        const getText = (selector: string) => {
+          const el = document.querySelector(selector);
+          return el?.textContent?.trim() || '';
+        };
+        const getAllText = (selector: string) => {
+          return Array.from(document.querySelectorAll(selector)).map(el => el.textContent?.trim() || '').filter(Boolean);
+        };
+
+        return {
+          headline: getText('.text-heading-xlarge') || getText('[data-generated-suggestion-target]') || '',
+          summary: getText('.inline-show-more-text') || '',
+          location: getText('.text-body-small.inline.t-black--light') || '',
+          positions: getAllText('.display-flex.align-items-center.mr1.t-bold span[aria-hidden="true"]'),
+          companies: getAllText('.t-14.t-normal span[aria-hidden="true"]'),
+          education: getAllText('.education__list .t-bold span[aria-hidden="true"]'),
+          skills: getAllText('.skill-category-entity__name-text'),
+        };
+      });
+
+      await browser.close();
+      return json({ success: true, profile: profileData });
+    } catch (e: any) {
+      return json({ success: false, error: e.message });
+    }
+  }
+
   if (p === '/api/digest' && method === 'GET') {
     const profile = DEFAULT_PROFILE;
     const jobs = (await hotJobs(env, profile.hot_limit)) as HotJob[];
@@ -999,6 +1049,49 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     const linkedinToken = await getToken(env.DB);
     const linkedinConnected = !!linkedinToken;
     return new Response(mePage(linkedinConnected), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  }
+
+  if (url.pathname === '/review') {
+    // LinkedIn profile review items
+    const reviewItems = [
+      {
+        id: 'headline',
+        section: 'Headline',
+        current: 'Agency Search Director @ Iceberg Media | SEO Credentials',
+        proposed: 'AI Systems Architect | Director of Agent Optimization | Building Autonomous Systems on Cloudflare',
+        approved: false,
+      },
+      {
+        id: 'summary',
+        section: 'Summary',
+        current: 'Agency Search Director at Iceberg Media. 11 years experience in SEO/PPC. Passion for search and web technology.',
+        proposed: 'I build agents that don\'t sleep. 27+ years in digital marketing, 14 years as Director & CMO of Iceberg Media. Now architecting autonomous AI systems on Cloudflare infrastructure that run 24/7 across distributed nodes. Early on OpenClaw (Jan 2025 at 18.7K stars, now 388K+). Organizer of OpenClaw Cebu community. Managing 145+ domains, 160 Google Business Profiles, and autonomous agents that research, score, and execute business operations without human intervention.',
+        approved: false,
+      },
+      {
+        id: 'skills',
+        section: 'Skills',
+        current: 'GHL, Go HighLevel, SEO (3 skills)',
+        proposed: 'Cloudflare Workers, TypeScript, Python, AI Agents, Autonomous Systems, SEO, AEO, PPC, ORM, Google Analytics, D1, Durable Objects, OpenClaw, Prompt Engineering, LLM Orchestration, GitHub Actions, Google Ads, Team Leadership (20+ skills)',
+        approved: false,
+      },
+      {
+        id: 'openroyleal',
+        section: 'New Role: OpenRoyleAl (Jan 2025 – Present)',
+        current: '(not on LinkedIn)',
+        proposed: 'AI Systems Architect & Founder\n• Sovereign AI infrastructure on Cloudflare: Workers AI, Agents SDK, AI Gateway, Browser Run\n• Multi-node distributed task orchestration across edge and origin\n• Built Alfred — autonomous AI assistant with persistent memory and voice\n• Built Alfred.report — AI-powered signal processing and growth engine',
+        approved: false,
+      },
+      {
+        id: 'iceberg',
+        section: 'Update: Iceberg Media Description',
+        current: 'Built and manage Agency brands. SEO4Tradesmen, SEO4Instructors, etc.',
+        proposed: 'Leading strategic pivot from 14-year SEO agency to AI services company. Transitioned pricing from £300/month retainers to £20K–£35K enterprise AI agent implementation projects. Cloudflare-first architecture across 145+ domains. Managing 160 Google Business Profiles. Teams of 10+ across US, UK, Philippines.',
+        approved: false,
+      },
+    ];
+
+    return new Response(reviewPage(reviewItems), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   const apply = url.pathname.match(/^\/apply\/([^/]+)$/);
   if (apply) {
