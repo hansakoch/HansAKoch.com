@@ -170,6 +170,7 @@ export function applyPage(job: any, followUp = '', flash = '', research: any = n
         <form method="post" action="/api/jobs/${esc(job.id)}/thumb"><button class="btn" name="vote" value="down">Thumbs down</button></form>
         <form method="post" action="/api/jobs/${esc(job.id)}/probe"><button class="btn">Probe ATS</button></form>
         ${!research ? `<form method="post" action="/api/jobs/${esc(job.id)}/research"><button class="btn" style="border-color:#818cf8;color:#c7d2fe">Research</button></form>` : ''}
+        ${job.source === 'manual' || job.source === 'manual-career' ? `<form method="post" action="/api/jobs/${esc(job.id)}/research" style="display:inline"><button class="btn" style="border-color:#facc15;color:#fde68a">Research this site</button></form>` : ''}
         <form method="post" action="/api/jobs/${esc(job.id)}/approve"><button class="btn">${approved ? 'Re-approve' : 'Approve packet'}</button></form>
         ${approved && research?.career_page_url ? `<form method="post" action="/api/jobs/${esc(job.id)}/apply"><button class="btn pri">Apply via company site</button></form>` : ''}
         ${approved && !research?.career_page_url ? `<form method="post" action="/api/jobs/${esc(job.id)}/submit"><button class="btn pri">Submit</button></form>` : ''}

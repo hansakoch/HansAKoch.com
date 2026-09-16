@@ -449,50 +449,102 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     return Response.redirect(new URL('/search?added=1', url).toString(), 302);
   }
 
-  // Add a job by URL
+  // Add a job by URL — if it's a job board/company site, research it and find all opportunities
   if (p === '/api/ingest/url' && method === 'POST') {
     const body = await readBody(request);
     const jobUrl = String(body.url || '').trim();
     if (!jobUrl) return json({ success: false, error: 'url required' }, 400);
 
-    // Extract company info from URL
-    let title = 'Opportunity';
-    let company = '';
-    let description = `Added manually from URL: ${jobUrl}`;
-
-    try {
-      const parsed = new URL(jobUrl);
-      const host = parsed.hostname.replace('www.', '');
-      const parts = host.split('.');
-      company = parts[0].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
-
-      // Check if this is a specific job listing or a company/job board website
-      const isSpecificJob = /greenhouse\.io|lever\.co|ashbyhq|workday|indeed\.com|linkedin\.com\/jobs|glassdoor|ziprecruiter|smartrecruiters/.test(jobUrl);
-
-      if (isSpecificJob) {
-        title = `Position at ${company}`;
-        description = `Job listing: ${jobUrl}`;
-      } else {
-        // This is a company website or job board - treat as company lead
-        title = `Research: ${company}`;
-        description = `Company website: ${jobUrl}\nResearch their career page for open positions.\nAdded manually by Hans.`;
-      }
-    } catch {}
-
-    const result = await upsertJob(env, {
-      title,
-      company,
-      url: jobUrl,
-      source: 'manual',
-      description,
-    });
-    await event(env, result.id, 'manual-add', jobUrl);
-
-    // Redirect to the apply page for this job
-    if (wantsHtmlRedirect(request)) {
-      return Response.redirect(new URL(`/apply/${result.id}`, url).toString(), 302);
+    let parsed;
+    try { parsed = new URL(jobUrl); } catch {
+      return json({ success: false, error: 'invalid url' }, 400);
     }
-    return json({ success: true, ...result });
+
+    const host = parsed.hostname.replace('www.', '');
+    const parts = host.split('.');
+    const company = parts[0].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+
+    // Check if this is a specific job listing or a company/job board website
+    const isSpecificJob = /greenhouse\.io|lever\.co|ashbyhq|workday|indeed\.com|linkedin\.com\/jobs|glassdoor|ziprecruiter|smartrecruiters/.test(jobUrl);
+
+    if (isSpecificJob) {
+      // Specific job listing — add directly
+      const result = await upsertJob(env, {
+        title: `Position at ${company}`,
+        company,
+        url: jobUrl,
+        source: 'manual',
+        description: `Job listing: ${jobUrl}`,
+      });
+      await event(env, result.id, 'manual-add', jobUrl);
+      if (wantsHtmlRedirect(request)) {
+        return Response.redirect(new URL(`/apply/${result.id}`, url).toString(), 302);
+      }
+      return json({ success: true, ...result });
+    }
+
+    // Company website or job board — research it and find opportunities
+    const baseUrl = `${parsed.protocol}//${parsed.hostname}`;
+
+    // Common career page paths
+    const careerPaths = ['/careers', '/jobs', '/join', '/hiring', '/work-with-us', '/career', '/employment', '/about/careers', '/company/careers'];
+    const foundPages: { url: string; title: string }[] = [];
+
+    // Probe career page paths
+    for (const path of careerPaths) {
+      const probeUrl = `${baseUrl}${path}`;
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(probeUrl, {
+          signal: controller.signal,
+          redirect: 'follow',
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CareerBot/1.0)' },
+        });
+        clearTimeout(timer);
+        if (res.ok) {
+          const ct = res.headers.get('content-type') || '';
+          if (ct.includes('text/html')) {
+            foundPages.push({ url: probeUrl, title: `${company} careers` });
+          }
+        }
+      } catch {}
+    }
+
+    // Add the main site as a research entry
+    const jobs: any[] = [{
+      title: `Research: ${company}`,
+      company,
+      url: baseUrl,
+      source: 'manual',
+      description: `Company website: ${baseUrl}\nCareer pages found: ${foundPages.length}\n${foundPages.map(p => p.url).join('\n')}\n\nAdded manually. Research their career page for open positions.`,
+    }];
+
+    // Add each found career page as a separate opportunity
+    for (const page of foundPages) {
+      jobs.push({
+        title: `${company} — Career Page`,
+        company,
+        url: page.url,
+        source: 'manual-career',
+        description: `Career page: ${page.url}\nCompany: ${company}\nFound via site crawl from ${baseUrl}`,
+      });
+    }
+
+    // Ingest all found opportunities
+    let ids: string[] = [];
+    for (const job of jobs) {
+      const result = await upsertJob(env, job);
+      ids.push(result.id);
+    }
+
+    await event(env, null, 'site-crawl', `${baseUrl} → ${foundPages.length} career pages, ${ids.length} entries`);
+
+    if (wantsHtmlRedirect(request)) {
+      // Redirect to the first entry
+      return Response.redirect(new URL(`/apply/${ids[0]}`, url).toString(), 302);
+    }
+    return json({ success: true, company, baseUrl, careerPages: foundPages.length, entries: ids.length, ids });
   }
 
   // Training questions API
