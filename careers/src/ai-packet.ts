@@ -107,6 +107,7 @@ Rules:
 - NEVER use placeholders like [X], [specific area], [company name], [years]. Use actual data from Hans's background.
 - In the resume header, use ONLY this location: ${headerLocation}. Do NOT list all three locations.
 - Name format: "Hans Al Koch (HAK)" — not "HANS AL KOCH"
+- Header links: hansakoch.com · linkedin.com/in/hansakochcom · github.com/hansakoch · x.com/hansakoch
 - Phone numbers by location: Wayne MI → +1 (313) 355-8675, SLO CA → +1 (415) 683-1016, Manchester UK → +44 7882 517 454, Cebu PH → +63 976 303 0566
 - Resume must be COMPREHENSIVE (15-20+ lines). Include: Professional Summary, Target Role, Relevant Skills, Experience (3-4 roles with bullet points), Education, Projects.
 - Cover letter must be 3-4 paragraphs, tailored to the specific company and role. Reference their values/culture if known.
@@ -227,7 +228,7 @@ export function templatePacket(job: { title: string; company: string; descriptio
   return {
     resume_md: `Hans Al Koch (HAK)
 ${address} · hans@hansakoch.com · ${phone}
-linkedin.com/in/hansakochcom · github.com/hansakoch
+hansakoch.com · linkedin.com/in/hansakochcom · github.com/hansakoch · x.com/hansakoch
 
 EXPERIENCE
 
@@ -272,7 +273,7 @@ More recently I have been building autonomous systems on Cloudflare infrastructu
 I work across US, UK, and Philippines time zones and am comfortable with fully remote collaboration. I would welcome a conversation about how my experience fits your needs.
 
 Hans Al Koch
-hans@hansakoch.com · ${phone}
+hansakoch.com · hans@hansakoch.com · ${phone}
 `,
   };
 }

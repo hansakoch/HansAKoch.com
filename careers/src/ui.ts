@@ -331,7 +331,7 @@ export type SearchStatus = {
 
 const RESUME_MASTER = `Hans Al Koch (HAK)
 Wayne, MI · hans@hansakoch.com · +1 (313) 355-8675
-linkedin.com/in/hansakochcom · github.com/hansakoch
+hansakoch.com · linkedin.com/in/hansakochcom · github.com/hansakoch · x.com/hansakoch
 
 SUMMARY
 AI Enablement & Automation Architect with 27+ years in digital marketing. Director & CMO of Iceberg Media (14 years). Managing 145+ domains and 160 Google Business Profiles. Building autonomous AI agents on Cloudflare. Early adopter of OpenClaw (Jan 2025, 18.7K to 388K stars).
@@ -380,8 +380,11 @@ export function mePage() {
       <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:14px">
         <span class="muted">Name</span><span style="color:#fff">Hans Al Koch (HAK)</span>
         <span class="muted">Email</span><span style="color:#fff">hans@hansakoch.com</span>
-        <span class="muted">LinkedIn</span><span style="color:#fff">linkedin.com/in/hansakochcom</span>
-        <span class="muted">GitHub</span><span style="color:#fff">github.com/hansakoch</span>
+        <span class="muted">Website</span><span style="color:#fff"><a href="https://hansakoch.com" target="_blank">hansakoch.com</a></span>
+        <span class="muted">LinkedIn</span><span style="color:#fff"><a href="https://linkedin.com/in/hansakochcom" target="_blank">linkedin.com/in/hansakochcom</a></span>
+        <span class="muted">GitHub</span><span style="color:#fff"><a href="https://github.com/hansakoch" target="_blank">github.com/hansakoch</a></span>
+        <span class="muted">X / Twitter</span><span style="color:#fff"><a href="https://x.com/hansakoch" target="_blank">x.com/hansakoch</a></span>
+        <span class="muted">Cursor</span><span style="color:#fff"><a href="https://cursor.sh/hansakoch" target="_blank">cursor.sh/hansakoch</a></span>
       </div>
     </div>
 
