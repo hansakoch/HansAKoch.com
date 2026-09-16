@@ -15,6 +15,7 @@ import { generateResearch, storeResearch, getResearch, type CompanyResearch } fr
 import { generatePacket, templatePacket, storePacketVersion, getPacketVersions, getLatestVersion } from './ai-packet.ts';
 import { findCareerPage, detectAtsType } from './career-finder.ts';
 import { applyViaBrowser, detectAts } from './apply/browser-apply.ts';
+import { getAuthUrl, getAccessToken, getProfile, storeToken, getToken, type LinkedInConfig } from './linkedin.ts';
 
 export interface Env {
   DB: D1Database;
@@ -33,6 +34,8 @@ export interface Env {
   BROWSER?: Fetcher;
   ASSETS?: Fetcher;
   MAIL_WEBHOOK_URL?: string;
+  LINKEDIN_CLIENT_ID?: string;
+  LINKEDIN_CLIENT_SECRET?: string;
 }
 
 const COOKIE = 'oc_auth';
@@ -718,6 +721,50 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     return json({ success: true, added });
   }
 
+  // LinkedIn OAuth: start auth flow
+  if (p === '/api/linkedin/auth' && method === 'GET') {
+    if (!env.LINKEDIN_CLIENT_ID) return json({ success: false, error: 'LinkedIn not configured' }, 500);
+    const config: LinkedInConfig = {
+      clientId: env.LINKEDIN_CLIENT_ID,
+      clientSecret: env.LINKEDIN_CLIENT_SECRET || '',
+      redirectUri: `${url.origin}/api/linkedin/callback`,
+    };
+    const state = crypto.randomUUID();
+    const authUrl = getAuthUrl(config, state);
+    return Response.redirect(authUrl, 302);
+  }
+
+  // LinkedIn OAuth: callback
+  if (p === '/api/linkedin/callback' && method === 'GET') {
+    const code = url.searchParams.get('code');
+    if (!code) return json({ success: false, error: 'no code' }, 400);
+    if (!env.LINKEDIN_CLIENT_ID || !env.LINKEDIN_CLIENT_SECRET) return json({ success: false, error: 'LinkedIn not configured' }, 500);
+
+    const config: LinkedInConfig = {
+      clientId: env.LINKEDIN_CLIENT_ID,
+      clientSecret: env.LINKEDIN_CLIENT_SECRET,
+      redirectUri: `${url.origin}/api/linkedin/callback`,
+    };
+
+    const tokenResult = await getAccessToken(config, code);
+    if (!tokenResult) return json({ success: false, error: 'token exchange failed' }, 400);
+
+    const profile = await getProfile(tokenResult.access_token);
+    if (!profile) return json({ success: false, error: 'profile fetch failed' }, 400);
+
+    await storeToken(env.DB, profile, tokenResult.access_token, tokenResult.expires_in);
+    await event(env, null, 'linkedin-auth', `Connected: ${profile.firstName} ${profile.lastName}`);
+
+    return Response.redirect(new URL('/me?linkedin=connected', url).toString(), 302);
+  }
+
+  // LinkedIn: get company data
+  if (p === '/api/linkedin/company' && method === 'GET') {
+    const token = await getToken(env.DB);
+    if (!token) return json({ success: false, error: 'LinkedIn not connected. Visit /api/linkedin/auth' }, 401);
+    return json({ success: true, connected: true, expires_at: token.expires_at });
+  }
+
   if (p === '/api/digest' && method === 'GET') {
     const profile = DEFAULT_PROFILE;
     const jobs = (await hotJobs(env, profile.hot_limit)) as HotJob[];
@@ -949,7 +996,9 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
   }
 
   if (url.pathname === '/me') {
-    return new Response(mePage(), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    const linkedinToken = await getToken(env.DB);
+    const linkedinConnected = !!linkedinToken;
+    return new Response(mePage(linkedinConnected), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   const apply = url.pathname.match(/^\/apply\/([^/]+)$/);
   if (apply) {

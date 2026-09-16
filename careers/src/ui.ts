@@ -118,6 +118,14 @@ export function applyPage(job: any, followUp = '', flash = '', research: any = n
   const watch = watchInstructions(job);
 
   const researchBlock = research ? `
+    <div class="card" style="border-color:${linkedinConnected ? '#4ade80' : '#facc15'}">
+      <h3 style="margin-bottom:12px">LinkedIn Integration</h3>
+      ${linkedinConnected
+        ? '<p style="color:#86efac">✓ Connected — company research and job enrichment active</p>'
+        : '<p style="color:#fde68a">Not connected — <a href="/api/linkedin/auth">Connect LinkedIn</a> to enable company research</p>'
+      }
+    </div>
+
     <div class="card" style="border-color:#818cf8">
       <h3 style="color:#c7d2fe">Company Research</h3>
       ${research.opportunity_type === 'career_direct' ? '<p style="color:#facc15;font-weight:600;margin-bottom:8px">CAREER DIRECT — No current listing, but worth approaching directly.</p>' : ''}
@@ -398,7 +406,7 @@ DeVry University — Computer Science (2001–2003)
 SKILLS
 SEO, AEO, GEO, PPC, ORM, Growth Marketing, TypeScript, Python, Cloudflare Workers, D1, Durable Objects, Analytics, Team Leadership`;
 
-export function mePage() {
+export function mePage(linkedinConnected = false) {
   return layout(
     'Me — Open Careers',
     `<div class="card" style="border-color:#818cf8">
