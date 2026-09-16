@@ -98,15 +98,27 @@ async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: st
     ? await env.DB.prepare('SELECT last_good_method, last_result FROM atlas WHERE domain = ?').bind(domain).first<{ last_good_method: string; last_result: string }>()
     : null;
   const row = await prepareRow(job, atlas, { extraDeny: await extraDeny(env) });
+
+  // Manual entries bypass gate filters
+  const isManual = job.source === 'manual';
+  let verdict = row.decision.verdict;
+  let score = row.decision.score;
   let status = row.status;
+
+  if (isManual && verdict === 'reject') {
+    verdict = 'maybe';
+    score = Math.max(score, 50);
+    status = 'hot';
+  }
+
   if (opts.statusOverride) status = opts.statusOverride;
-  else if (job.source === 'email' && row.decision.verdict !== 'reject') status = 'reviewed';
+  else if (job.source === 'email' && verdict !== 'reject') status = 'reviewed';
   const now = new Date().toISOString();
 
   // Auto-research + auto-generate packet for non-rejected jobs (unless bulk import)
   let resume_md = row.resume_md;
   let cover_md = row.cover_md;
-  if (row.decision.verdict !== 'reject' && !opts.skipResearch) {
+  if (verdict !== 'reject' && !opts.skipResearch) {
     try {
       const research = await generateResearch(env, { id: row.id, ...job });
       if (research.company_url && !research.career_page_url) {
@@ -152,8 +164,8 @@ async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: st
       row.decision.gate0,
       row.decision.gate1,
       row.decision.locLabel,
-      row.decision.score,
-      row.decision.verdict,
+      score,
+      verdict,
       row.method,
       status,
       resume_md,
@@ -163,7 +175,7 @@ async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: st
       now,
     )
     .run();
-  return { id: row.id, verdict: row.decision.verdict, status, score: row.decision.score };
+  return { id: row.id, verdict, status, score };
 }
 
 function submitWatch(method: string, env: Env): { watch: string; nextStatus: string } {
@@ -442,18 +454,41 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     const body = await readBody(request);
     const jobUrl = String(body.url || '').trim();
     if (!jobUrl) return json({ success: false, error: 'url required' }, 400);
-    let title = 'Job opportunity';
+
+    // Extract company info from URL
+    let title = 'Opportunity';
     let company = '';
-    const urlMatch = jobUrl.match(/greenhouse\.io\/([^/]+)/);
-    if (urlMatch) company = urlMatch[1].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+    let description = `Added manually from URL: ${jobUrl}`;
+
+    try {
+      const parsed = new URL(jobUrl);
+      const host = parsed.hostname.replace('www.', '');
+      const parts = host.split('.');
+      company = parts[0].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+
+      // Check if this is a specific job listing or a company/job board website
+      const isSpecificJob = /greenhouse\.io|lever\.co|ashbyhq|workday|indeed\.com|linkedin\.com\/jobs|glassdoor|ziprecruiter|smartrecruiters/.test(jobUrl);
+
+      if (isSpecificJob) {
+        title = `Position at ${company}`;
+        description = `Job listing: ${jobUrl}`;
+      } else {
+        // This is a company website or job board - treat as company lead
+        title = `Research: ${company}`;
+        description = `Company website: ${jobUrl}\nResearch their career page for open positions.\nAdded manually by Hans.`;
+      }
+    } catch {}
+
     const result = await upsertJob(env, {
       title,
       company,
       url: jobUrl,
       source: 'manual',
-      description: `Added manually from URL: ${jobUrl}`,
+      description,
     });
     await event(env, result.id, 'manual-add', jobUrl);
+
+    // Redirect to the apply page for this job
     if (wantsHtmlRedirect(request)) {
       return Response.redirect(new URL(`/apply/${result.id}`, url).toString(), 302);
     }
