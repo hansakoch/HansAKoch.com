@@ -51,8 +51,8 @@ function packetPrompt(
     locationContext = 'Based in Cebu, Philippines. Available for any timezone.';
     headerLocation = 'Cebu, PH';
   } else if (loc.includes('singapore') || loc.includes('asia') || loc.includes('apac') || loc.includes('japan') || loc.includes('korea') || loc.includes('hong kong') || loc.includes('egypt') || loc.includes('middle east') || loc.includes('dubai') || loc.includes('cairo') || loc.includes('india') || loc.includes('thailand') || loc.includes('vietnam') || loc.includes('indonesia') || loc.includes('malaysia')) {
-    locationContext = 'Based in Singapore. Available for APAC timezone.';
-    headerLocation = 'Singapore';
+    locationContext = 'Based in Cebu, Philippines. Available for APAC/Middle East timezone.';
+    headerLocation = 'Cebu, PH';
   } else if (loc.includes('uk') || loc.includes('london') || loc.includes('manchester') || loc.includes('united kingdom') || loc.includes('england')) {
     locationContext = 'Based in Manchester, UK. Available immediately.';
     headerLocation = 'Manchester, UK';
