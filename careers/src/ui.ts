@@ -330,7 +330,7 @@ export type SearchStatus = {
 };
 
 const RESUME_MASTER = `Hans Al Koch (HAK)
-Wayne, MI · hans@hansakoch.com · +1 (313) 355-8675
+San Luis Obispo, CA · hans@hansakoch.com · +1 (415) 683-1016
 hansakoch.com · linkedin.com/in/hansakochcom · github.com/hansakoch · x.com/hansakoch
 
 SUMMARY
