@@ -8,8 +8,8 @@ export type OnboardingItem = {
 export const ONBOARDING_ITEMS: OnboardingItem[] = [
   {
     key: 'cf_browser_enabled',
-    label: '1. Browser Rendering enabled',
-    detail: 'Browser Rendering must be enabled in Cloudflare dashboard for automated form filling. Check Workers & Pages → Settings.',
+    label: '1. Browser Run binding configured',
+    detail: 'Browser Run is enabled via wrangler.toml browser binding — no dashboard toggle needed. Free plan: 10 min/day, 3 concurrent. Paid plan: 10 hours/month, 10 concurrent.',
   },
   {
     key: 'proxy_rotation',
