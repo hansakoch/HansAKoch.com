@@ -23,15 +23,16 @@ textarea{resize:vertical;min-height:80px}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 pre{white-space:pre-wrap;font-size:12px;color:#ccc;max-height:280px;overflow:auto}
 code.path,.path{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#bbf7d0;user-select:all;-webkit-user-select:all;background:#0a0a0a;padding:3px 8px;border-radius:4px;border:1px solid #333;display:inline-block;margin:3px 0;cursor:text}
-.vault-note{margin-top:8px;font-size:12px;color:#888}
-.banner{border-radius:8px;padding:12px 14px;margin:10px 0;border:1px solid #333;font-size:14px}
-.banner.ok{background:#14532d;border-color:#4ade80;color:#bbf7d0}
-.banner.warn{background:#3a3a1a;border-color:#facc15;color:#fde68a}
-.banner.err{background:#3a1a1a;border-color:#f87171;color:#fecaca}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.flash{animation:pulse 1.5s infinite}
+details summary{cursor:pointer;padding:8px 0;color:#fff;font-weight:600}
+details summary:hover{color:#ff4444}
+details[open] summary{margin-bottom:8px}
+details .detail{padding:8px 12px;border-left:3px solid #333;margin:4px 0}
 </style></head><body>
 <div class="top"><div class="wrap">
 <h1>Open Careers</h1>
-<p class="muted">${authed ? '<a href="/">Hot board</a> · <a href="/apply">Apply queue</a> · <a href="/onboarding">Onboarding</a> · <a href="/search">Search</a>' : 'Private tenant board'}</p>
+<p class="muted">${authed ? '<a href="/">Hot</a> · <a href="/apply">Apply</a> · <a href="/tasks">Tasks</a> · <a href="/search">Search</a>' : 'Private tenant board'}</p>
 </div></div>
 <div class="wrap">${body}</div>
 </body></html>`;
@@ -51,18 +52,17 @@ export function loginPage() {
   );
 }
 
-export function boardPage(jobs: any[], stats: any = {}, filter = '') {
+export function boardPage(jobs: any[], stats: any = {}, filter = '', sort = 'score') {
   const s = {
     total: 0, discovered: 0, reviewing: 0, approved: 0,
     applied: 0, confirmed: 0, interview: 0, offer: 0, rejected: 0, ...stats,
   };
 
-  const f = filter ? `?status=${filter}` : '';
   const activeFilter = filter || 'all';
+  const sortLow = sort === 'score_low';
 
   const pipeline = `
     <div class="card" style="border-color:#333">
-      <h2 style="margin-bottom:12px;font-size:18px">Pipeline</h2>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px;text-align:center">
         <a href="/" style="text-decoration:none;${activeFilter === 'all' ? 'border-bottom:2px solid #fff;padding-bottom:4px' : ''}"><div style="font-size:24px;font-weight:700;color:#fff">${s.total}</div><div class="muted">All</div></a>
         <a href="/?status=hot" style="text-decoration:none;${activeFilter === 'hot' ? 'border-bottom:2px solid #facc15;padding-bottom:4px' : ''}"><div style="font-size:24px;font-weight:700;color:#facc15">${s.discovered}</div><div class="muted">New</div></a>
@@ -70,6 +70,10 @@ export function boardPage(jobs: any[], stats: any = {}, filter = '') {
         <a href="/?status=applied" style="text-decoration:none;${activeFilter === 'applied' ? 'border-bottom:2px solid #38bdf8;padding-bottom:4px' : ''}"><div style="font-size:24px;font-weight:700;color:#38bdf8">${s.applied}</div><div class="muted">Applied</div></a>
         <a href="/?status=interview" style="text-decoration:none;${activeFilter === 'interview' ? 'border-bottom:2px solid #a78bfa;padding-bottom:4px' : ''}"><div style="font-size:24px;font-weight:700;color:#a78bfa">${s.interview}</div><div class="muted">Interviews</div></a>
         <a href="/?status=offer" style="text-decoration:none;${activeFilter === 'offer' ? 'border-bottom:2px solid #fbbf24;padding-bottom:4px' : ''}"><div style="font-size:24px;font-weight:700;color:#fbbf24">${s.offer}</div><div class="muted">Offers</div></a>
+      </div>
+      <div style="margin-top:8px;text-align:right">
+        <a class="btn" href="/?status=${activeFilter}&sort=score" style="font-size:12px;${!sortLow ? 'border-color:#ff4444;color:#ff4444' : ''}">High → Low</a>
+        <a class="btn" href="/?status=${activeFilter}&sort=score_low" style="font-size:12px;${sortLow ? 'border-color:#ff4444;color:#ff4444' : ''}">Low → High</a>
       </div>
     </div>`;
 
@@ -207,22 +211,45 @@ function watchInstructions(job: any): string {
 
 export function onboardingPage(items: { key: string; label: string; detail: string; done: boolean }[]) {
   const doneCount = items.filter((i) => i.done).length;
+  const allDone = doneCount === items.length;
+  const pendingCount = items.length - doneCount;
+
+  const flashBanner = !allDone ? `
+    <div class="card flash" style="border-color:#ff4444;background:#3a1a1a">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <strong style="color:#f87171;font-size:18px">${pendingCount} task${pendingCount > 1 ? 's' : ''} remaining</strong>
+          <p class="muted" style="margin-top:4px">Complete all tasks before applying for jobs.</p>
+        </div>
+      </div>
+    </div>` : `
+    <div class="card" style="border-color:#4ade80">
+      <strong style="color:#86efac;font-size:18px">All tasks complete</strong>
+      <p class="muted" style="margin-top:4px">You are ready to apply for jobs.</p>
+    </div>`;
+
   const rows = items
     .map(
-      (i) => `<div class="card" style="${i.done ? 'border-color:#4ade80' : ''}">
-      <form method="post" action="/api/onboarding/${esc(i.key)}" style="display:flex;gap:12px;align-items:flex-start">
-        <input type="hidden" name="done" value="${i.done ? '0' : '1'}"/>
-        <button class="btn" type="submit" style="min-width:90px">${i.done ? 'Undo ✓' : 'Mark done'}</button>
-        <div><p style="color:#fff;font-weight:600">${esc(i.label)}</p><p class="muted">${esc(i.detail)}</p></div>
-      </form>
-    </div>`,
+      (i) => `<details ${!i.done ? 'open' : ''} style="margin:8px 0;border:1px solid ${i.done ? '#222' : '#ff4444'};border-radius:8px;padding:8px 12px;background:#141414">
+        <summary style="display:flex;gap:12px;align-items:center">
+          <form method="post" action="/api/onboarding/${esc(i.key)}" style="flex-shrink:0">
+            <input type="hidden" name="done" value="${i.done ? '0' : '1'}"/>
+            <button class="btn ${i.done ? '' : 'pri'}" type="submit" style="min-width:44px;padding:8px">${i.done ? '✓' : '!'}</button>
+          </form>
+          <span style="${i.done ? 'color:#888;text-decoration:line-through' : 'color:#fff;font-weight:600'}">${esc(i.label)}</span>
+          ${!i.done ? '<span class="badge drop" style="margin-left:auto">TODO</span>' : '<span class="badge ready" style="margin-left:auto">DONE</span>'}
+        </summary>
+        <div class="detail" style="margin-top:8px;color:#ccc;font-size:14px">
+          ${esc(i.detail)}
+        </div>
+      </details>`,
     )
     .join('');
+
   return layout(
-    'Onboarding — Open Careers',
-    `<p class="muted">${doneCount}/${items.length} — mark each only when that step is true. Skip vault paths.</p>
-    ${rows}
-    <div class="card"><p class="muted">You approve packets here. Agents handle VPN, probes, vault. CF Secrets Store = master keys (next).</p></div>`,
+    'Tasks — Open Careers',
+    `${flashBanner}
+    ${rows}`,
   );
 }
 
@@ -233,30 +260,61 @@ export type SearchStatus = {
 };
 
 export function searchPage(queries: { term: string; location: string }[], status?: SearchStatus) {
-  const q = queries.map((x) => `<li>${esc(x.term)} · ${esc(x.location)}</li>`).join('');
+  const q = queries.map((x, i) => `<li style="margin:4px 0;display:flex;gap:8px;align-items:center">
+    <span style="color:#ccc;flex:1">${esc(x.term)} · ${esc(x.location)}</span>
+  </li>`).join('');
   let banner = '';
   if (status && (status.kicked !== undefined || status.adapter || status.detail)) {
     const kicked = status.kicked === '1' || status.kicked === 'true';
     const cls = kicked ? 'ok' : status.adapter === 'manual' ? 'warn' : 'err';
     const title = kicked
-      ? 'Search kicked — JobSpy webhook accepted the run.'
+      ? 'Search kicked.'
       : status.adapter === 'manual'
-        ? 'Search not kicked — no SEARCH_WEBHOOK_URL (manual mode).'
-        : 'Search not kicked — adapter did not start a scrape.';
-    banner = `<div class="banner ${cls}" role="status">
+        ? 'No webhook configured. Manual mode.'
+        : 'Search did not start.';
+    banner = `<div class="card" style="border-color:${kicked ? '#4ade80' : '#facc15'}">
       <strong>${esc(title)}</strong>
-      <p class="muted" style="margin-top:6px;color:inherit;opacity:.9">adapter=<code>${esc(status.adapter || 'unknown')}</code> · kicked=<code>${esc(status.kicked ?? '0')}</code>
-      ${status.detail ? ` · ${esc(status.detail)}` : ''}</p>
-      ${!kicked && status.adapter === 'manual' ? '<p style="margin-top:8px">Jobs still land via cron / <code>scripts/jobspy-ingest.py</code> → <code>/api/ingest</code>. Set Worker secret SEARCH_WEBHOOK_URL to make this button fire JobSpy.</p>' : ''}
+      <p class="muted" style="margin-top:4px">adapter=${esc(status.adapter || 'unknown')} · kicked=${esc(status.kicked ?? '0')}</p>
     </div>`;
   }
   return layout(
     'Search — Open Careers',
     `${banner}
     <div class="card">
-      <p class="muted">Worldwide queries (Gate 0 drops junk before D1 visible rows). Vultr JobSpy posts to <code>/api/ingest</code>. Cron hits SEARCH_WEBHOOK_URL when set; else Browser Run fallback is marked needs_you.</p>
-      <ol class="muted">${q}</ol>
-      <form method="post" action="/api/search/run" class="row"><button class="btn pri">Queue search run</button></form>
+      <h3>Search Queries (${queries.length})</h3>
+      <ol class="muted" style="margin:8px 0 16px 20px">${q}</ol>
+      <form method="post" action="/api/search/run" class="row"><button class="btn pri">Run search now</button></form>
+    </div>
+    <div class="card">
+      <h3>Add Search Query</h3>
+      <form method="post" action="/api/search/add" style="margin-top:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" name="term" placeholder="Job title or keyword" style="flex:2;min-width:200px" required/>
+          <input type="text" name="location" placeholder="Location (remote, Michigan, etc.)" style="flex:1;min-width:150px" required/>
+          <button class="btn pri" type="submit">Add</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Add Job URL Directly</h3>
+      <p class="muted" style="margin-bottom:8px">Paste a job listing URL to add it to the board.</p>
+      <form method="post" action="/api/ingest/url" style="margin-top:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="url" name="url" placeholder="https://boards.greenhouse.io/company/jobs/12345" style="flex:1;min-width:200px" required/>
+          <button class="btn pri" type="submit">Add job</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Job Sites</h3>
+      <p class="muted">Jobs are sourced from:</p>
+      <ul class="muted" style="margin:8px 0 0 20px">
+        <li>LinkedIn (via JobSpy)</li>
+        <li>Indeed (via JobSpy)</li>
+        <li>Email alerts (auto-parsed)</li>
+        <li>Direct URLs (added above)</li>
+        <li>RSS feeds</li>
+      </ul>
     </div>`,
   );
 }

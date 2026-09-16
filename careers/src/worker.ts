@@ -426,6 +426,41 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     return json({ success: true, plan, kicked });
   }
 
+  // Add a search query
+  if (p === '/api/search/add' && method === 'POST') {
+    const body = await readBody(request);
+    const term = String(body.term || '').trim();
+    const location = String(body.location || 'remote').trim();
+    if (!term) return json({ success: false, error: 'term required' }, 400);
+    // Store in events for now (profile.yaml is read-only in worker)
+    await event(env, null, 'search-add', `${term} | ${location}`);
+    return Response.redirect(new URL('/search?added=1', url).toString(), 302);
+  }
+
+  // Add a job by URL
+  if (p === '/api/ingest/url' && method === 'POST') {
+    const body = await readBody(request);
+    const jobUrl = String(body.url || '').trim();
+    if (!jobUrl) return json({ success: false, error: 'url required' }, 400);
+    // Try to extract title from URL
+    let title = 'Job opportunity';
+    let company = '';
+    const urlMatch = jobUrl.match(/greenhouse\.io\/([^/]+)/);
+    if (urlMatch) company = urlMatch[1].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+    const result = await upsertJob(env, {
+      title,
+      company,
+      url: jobUrl,
+      source: 'manual',
+      description: `Added manually from URL: ${jobUrl}`,
+    });
+    await event(env, result.id, 'manual-add', jobUrl);
+    if (wantsHtmlRedirect(request)) {
+      return Response.redirect(new URL(`/apply/${result.id}`, url).toString(), 302);
+    }
+    return json({ success: true, ...result });
+  }
+
   if (p === '/api/digest' && method === 'GET') {
     const profile = DEFAULT_PROFILE;
     const jobs = (await hotJobs(env, profile.hot_limit)) as HotJob[];
@@ -666,7 +701,7 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     };
     return new Response(searchPage(DEFAULT_PROFILE.queries, status), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
-  if (url.pathname === '/onboarding') {
+  if (url.pathname === '/tasks' || url.pathname === '/onboarding') {
     await ensureOnboardingRows(env.DB);
     const state = await getOnboardingState(env.DB);
     const items = ONBOARDING_ITEMS.map((i) => ({ ...i, done: state[i.key] }));
@@ -691,17 +726,28 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
   }
   if (url.pathname === '/apply' || url.pathname === '/') {
     const filter = url.searchParams.get('status') || '';
+    const sort = url.searchParams.get('sort') || 'score';
+    const sortDir = sort === 'score_low' ? 'ASC' : 'DESC';
+    const isApplyPage = url.pathname === '/apply';
     let jobs;
-    if (filter === 'hot') {
+
+    if (isApplyPage) {
+      // Apply page: only show approved jobs ready to submit
       const { results } = await env.DB.prepare(
-        `SELECT * FROM jobs WHERE verdict IN ('hot','maybe') AND status = 'hot' AND status NOT IN ('dropped','thumbs_down')
-         ORDER BY CASE verdict WHEN 'hot' THEN 0 ELSE 1 END, score DESC, updated_at DESC LIMIT ?`,
+        `SELECT * FROM jobs WHERE approved=1 AND status NOT IN ('applied','queued','interview','offer','rejected','dropped','thumbs_down')
+         ORDER BY score ${sortDir}, updated_at DESC LIMIT ?`,
+      ).bind(DEFAULT_PROFILE.hot_limit).all();
+      jobs = results || [];
+    } else if (filter === 'hot') {
+      const { results } = await env.DB.prepare(
+        `SELECT * FROM jobs WHERE verdict IN ('hot','maybe') AND status = 'hot' AND approved=0 AND status NOT IN ('dropped','thumbs_down')
+         ORDER BY score ${sortDir}, updated_at DESC LIMIT ?`,
       ).bind(DEFAULT_PROFILE.hot_limit).all();
       jobs = results || [];
     } else if (filter === 'ready') {
       const { results } = await env.DB.prepare(
         `SELECT * FROM jobs WHERE approved=1 AND status NOT IN ('applied','queued','interview','offer','rejected','dropped','thumbs_down')
-         ORDER BY score DESC, updated_at DESC LIMIT ?`,
+         ORDER BY score ${sortDir}, updated_at DESC LIMIT ?`,
       ).bind(DEFAULT_PROFILE.hot_limit).all();
       jobs = results || [];
     } else if (filter === 'applied') {
@@ -720,9 +766,14 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
       ).bind(DEFAULT_PROFILE.hot_limit).all();
       jobs = results || [];
     } else {
-      jobs = await hotJobs(env, DEFAULT_PROFILE.hot_limit);
+      // Hot page: all non-applied jobs sorted by score
+      const { results } = await env.DB.prepare(
+        `SELECT * FROM jobs WHERE verdict IN ('hot','maybe') AND status NOT IN ('applied','queued','dropped','thumbs_down','rejected')
+         ORDER BY score ${sortDir}, updated_at DESC LIMIT ?`,
+      ).bind(DEFAULT_PROFILE.hot_limit).all();
+      jobs = results || [];
     }
-    const allJobs = await hotJobs(env, 1);
+
     // Get pipeline stats
     const stats = {
       total: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE verdict != 'reject' AND status NOT IN ('dropped','thumbs_down')").first<{ n: number }>())?.n || 0,
@@ -735,7 +786,7 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
       offer: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='offer'").first<{ n: number }>())?.n || 0,
       rejected: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='rejected'").first<{ n: number }>())?.n || 0,
     };
-    return new Response(boardPage(jobs, stats, filter), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    return new Response(boardPage(jobs, stats, filter, sort), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   return new Response('Not found', { status: 404 });
 }
