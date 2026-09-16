@@ -110,6 +110,10 @@ Rules:
 - Resume must be COMPREHENSIVE (15-20+ lines). Include: Professional Summary, Target Role, Relevant Skills, Experience (3-4 roles with bullet points), Education, Projects.
 - Cover letter must be 3-4 paragraphs, tailored to the specific company and role. Reference their values/culture if known.
 - NEVER write "NOTES FROM THE JD: See listing" — that's garbage. If you have the job description, reference specific requirements.
+- NEVER include the job description text in the resume or cover letter. The resume is about HANS, not the job listing.
+- NEVER include "About Us" from the company. The cover letter should reference the company naturally, not paste their marketing copy.
+- The resume should look like Hans wrote it himself over his career. Not tailored for this specific job.
+- The cover letter should be 3 paragraphs: why you fit, what you bring, close. No fluff.
 
 HANS'S CAREER TIMELINE (use these EXACTLY, do not combine):
 - 27+ years in digital marketing (since 1999)
@@ -227,12 +231,6 @@ linkedin.com/in/hansakochcom · github.com/hansakoch
 PROFESSIONAL SUMMARY
 AI Enablement & Automation Architect with 27+ years building and scaling digital businesses. Director & CMO of Iceberg Media (14 years), managing 145+ domains and 160 Google Business Profiles. Now building autonomous AI agents on Cloudflare-first architecture. Early adopter of OpenClaw (Jan 2025, 18.7K → 388K stars).
 
-TARGET ROLE
-${title} — ${company} (${loc})
-
-RELEVANT SKILLS
-${reqText}
-
 EXPERIENCE
 
 AI Systems Architect & Founder — OpenRoyleAl.com (Jan 2025 – Present)
@@ -256,19 +254,20 @@ Head of Digital Strategy — Ajaxx Restoration (2020 – 2024)
 EDUCATION
 San José State University — Business Administration (2002–2004)
 DeVry University — Computer Science (2001–2003)
+
+SKILLS
+${reqText}, TypeScript, Python, Cloudflare Workers, D1, SEO, AEO/PPC, ORM, Analytics, Team Leadership
 `,
 
     cover_md: `Dear ${company} Hiring Team,
 
-I am writing to express my interest in the ${title} position. With 27 years in digital marketing and 14 years as Director and CMO of Iceberg Media, I bring a unique combination of hands-on SEO expertise and modern AI automation capabilities.
+I am writing regarding the ${title} position. My background spans 27 years in digital marketing and technology, with the last 14 years spent as Director and CMO of Iceberg Media.
 
-At Iceberg Media, I have managed 145+ domains and 160 Google Business Profiles, directing SEO and PPC campaigns for high-value local service sectors across the UK and USA. My team of 10+ spans the US, UK, and Philippines, giving me deep experience in remote collaboration and international operations.
+At Iceberg Media I built and managed a team of 10 across three countries, running SEO and paid media campaigns for clients in healthcare, legal, financial services, and home services. We manage 145+ domains and 160 Google Business Profiles. I have been hands-on with every aspect of digital operations from the CMS to the ads account to client reporting.
 
-More recently, I have been building autonomous AI agents on Cloudflare infrastructure, creating systems that can research, score, and manage business processes at scale. This is not theoretical work. These agents run 24/7, handling real tasks for real businesses.
+More recently I have been building autonomous systems on Cloudflare infrastructure. This is not theoretical. These are production systems running 24/7, handling research, content operations, and business process automation at scale. I bring a practical engineering mindset to marketing problems.
 
-What sets me apart is that I do not just talk about SEO and growth. I build the systems that make them happen. I sit in the CMS, the ads account, and the agent logs. I have been doing this since 1999, and I am still shipping.
-
-I would welcome the opportunity to discuss how my experience aligns with your needs.
+I work across US, UK, and Philippines time zones and am comfortable with fully remote collaboration. I would welcome a conversation about how my experience fits your needs.
 
 Hans Al Koch
 hans@hansakoch.com · ${phone}
