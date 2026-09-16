@@ -754,13 +754,23 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
   if (!authed(request, env)) {
     return new Response(loginPage(), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
+
+  // Count pending tasks for nav badge
+  let pendingTasks = 0;
+  try {
+    const state = await getOnboardingState(env.DB);
+    pendingTasks = ONBOARDING_ITEMS.filter((i) => !state[i.key]).length;
+    // Also count unanswered training questions
+    const unanswered = await env.DB.prepare("SELECT COUNT(*) as n FROM training_questions WHERE answered_at IS NULL").first<{ n: number }>();
+    pendingTasks += unanswered?.n || 0;
+  } catch {}
   if (url.pathname === '/search') {
     const status = {
       kicked: url.searchParams.get('kicked') || undefined,
       adapter: url.searchParams.get('adapter') || undefined,
       detail: url.searchParams.get('detail') || undefined,
     };
-    return new Response(searchPage(DEFAULT_PROFILE.queries, status), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    return new Response(searchPage(DEFAULT_PROFILE.queries, status, pendingTasks), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   if (url.pathname === '/tasks' || url.pathname === '/onboarding') {
     await ensureOnboardingRows(env.DB);
@@ -769,7 +779,7 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     const { results: trainingQuestions } = await env.DB.prepare(
       'SELECT * FROM training_questions ORDER BY CASE WHEN answered_at IS NULL THEN 0 ELSE 1 END, created_at DESC LIMIT 50',
     ).all();
-    return new Response(onboardingPage(items, trainingQuestions || []), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    return new Response(onboardingPage(items, trainingQuestions || [], pendingTasks), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   const apply = url.pathname.match(/^\/apply\/([^/]+)$/);
   if (apply) {
@@ -786,7 +796,7 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     else if (url.searchParams.get('researched') === '1') flash = 'Company research complete. Now generate or rewrite the packet.';
     else if (url.searchParams.get('rewritten') === '1') flash = 'Packet rewritten with your feedback. Review and approve.';
     else if (url.searchParams.get('navigated') === '1') flash = 'Career page loaded via CF Browser. Check Live View to complete submission.';
-    return new Response(applyPage(job, followUpDraft(job), flash, research, versions), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    return new Response(applyPage(job, followUpDraft(job), flash, research, versions, pendingTasks), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   if (url.pathname === '/apply' || url.pathname === '/') {
     const filter = url.searchParams.get('status') || '';
@@ -850,7 +860,7 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
       offer: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='offer'").first<{ n: number }>())?.n || 0,
       rejected: (await env.DB.prepare("SELECT COUNT(*) as n FROM jobs WHERE status='rejected'").first<{ n: number }>())?.n || 0,
     };
-    return new Response(boardPage(jobs, stats, filter, sort), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    return new Response(boardPage(jobs, stats, filter, sort, pendingTasks), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   return new Response('Not found', { status: 404 });
 }

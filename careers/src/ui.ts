@@ -2,7 +2,7 @@ function esc(s: unknown) {
   return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
 }
 
-export function layout(title: string, body: string, authed = true) {
+export function layout(title: string, body: string, authed = true, pendingTasks = 0) {
   return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -32,7 +32,7 @@ details .detail{padding:8px 12px;border-left:3px solid #333;margin:4px 0}
 </style></head><body>
 <div class="top"><div class="wrap">
 <h1>Open Careers</h1>
-<p class="muted">${authed ? '<a href="/">Hot</a> · <a href="/apply">Apply</a> · <a href="/tasks">Tasks</a> · <a href="/search">Search</a>' : 'Private tenant board'}</p>
+<p class="muted">${authed ? `<a href="/">Hot</a> · <a href="/apply">Apply</a> · <a href="/tasks" ${pendingTasks > 0 ? 'class="flash" style="color:#ff4444;font-weight:700"' : ''}>Tasks${pendingTasks > 0 ? ` (${pendingTasks})` : ''}</a> · <a href="/search">Search</a>` : 'Private tenant board'}</p>
 </div></div>
 <div class="wrap">${body}</div>
 </body></html>`;
@@ -52,7 +52,7 @@ export function loginPage() {
   );
 }
 
-export function boardPage(jobs: any[], stats: any = {}, filter = '', sort = 'score') {
+export function boardPage(jobs: any[], stats: any = {}, filter = '', sort = 'score', pendingTasks = 0) {
   const s = {
     total: 0, discovered: 0, reviewing: 0, approved: 0,
     applied: 0, confirmed: 0, interview: 0, offer: 0, rejected: 0, ...stats,
@@ -101,10 +101,12 @@ export function boardPage(jobs: any[], stats: any = {}, filter = '', sort = 'sco
     `${pipeline}
      <p class="muted">${jobs.length} job ops sorted by score. Tap Open to review the packet and apply.</p>
      ${cards || '<p class="muted">No job ops yet. Search runs at 08:00, 14:00, 20:00 UTC.</p>'}`,
+    true,
+    pendingTasks,
   );
 }
 
-export function applyPage(job: any, followUp = '', flash = '', research: any = null, versions: any[] = []) {
+export function applyPage(job: any, followUp = '', flash = '', research: any = null, versions: any[] = [], pendingTasks = 0) {
   const help = job.method === 'needs_you' || job.method === 'unknown';
   const video = job.packet_notes === 'video-required' || job.method === 'manual_packet';
   const approved = !!job.approved;
@@ -192,6 +194,8 @@ export function applyPage(job: any, followUp = '', flash = '', research: any = n
     <div class="card"><h3>Resume</h3><pre>${esc(job.resume_md || '(packet generating...)')}</pre></div>
     ${versionsBlock}
     <div class="card"><h3>Listing notes</h3><pre>${esc((job.description || '').slice(0, 2000))}</pre></div>`,
+    true,
+    pendingTasks,
   );
 }
 
@@ -212,6 +216,7 @@ function watchInstructions(job: any): string {
 export function onboardingPage(
   items: { key: string; label: string; detail: string; done: boolean }[],
   trainingQuestions: any[] = [],
+  pendingTasks = 0,
 ) {
   const doneCount = items.filter((i) => i.done).length;
   const allDone = doneCount === items.length;
@@ -309,6 +314,8 @@ export function onboardingPage(
     `${flashBanner}
     ${taskRows}
     ${trainingSection}`,
+    true,
+    pendingTasks,
   );
 }
 
@@ -318,7 +325,7 @@ export type SearchStatus = {
   detail?: string;
 };
 
-export function searchPage(queries: { term: string; location: string }[], status?: SearchStatus) {
+export function searchPage(queries: { term: string; location: string }[], status?: SearchStatus, pendingTasks = 0) {
   const q = queries.map((x, i) => `<li style="margin:4px 0;display:flex;gap:8px;align-items:center">
     <span style="color:#ccc;flex:1">${esc(x.term)} · ${esc(x.location)}</span>
   </li>`).join('');
@@ -375,5 +382,7 @@ export function searchPage(queries: { term: string; location: string }[], status
         <li>RSS feeds</li>
       </ul>
     </div>`,
+    true,
+    pendingTasks,
   );
 }
