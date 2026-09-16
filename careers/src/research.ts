@@ -40,26 +40,29 @@ export const CAREER_PATHS = [
 
 /** Build research prompt for AI. */
 export function researchPrompt(job: { title: string; company: string; description?: string; url?: string }): string {
-  return `You are researching a company for a job application. Extract key information.
+  const desc = (job.description || '').slice(0, 3000);
+  return `You are researching a company for a job application. Extract key information from the ACTUAL JOB LISTING content.
 
 JOB DETAILS:
 Title: ${job.title}
 Company: ${job.company}
 URL: ${job.url || 'unknown'}
-Description: ${(job.description || '').slice(0, 2000)}
+Description/Content: ${desc}
 
-TASK: Based on the job details above, generate a JSON object with these fields:
-- company_url: best guess at the company's main website URL
-- career_page_url: best guess at their careers/jobs page
-- company_about: 2-3 sentences about what the company does
-- company_values: their stated values or mission (or infer from description)
-- team_info: any info about team size, structure, culture
-- hiring_manager: name if discoverable, otherwise "Not found"
-- culture_notes: any cultural signals from the job description
+TASK: Based on the ACTUAL CONTENT above (not generic assumptions), generate a JSON object with these fields:
+- company_url: best guess at the company's main website URL (from the content, not the domain)
+- career_page_url: best guess at their careers/jobs page (from the content)
+- company_about: 2-3 sentences about what the company does (from the content, not generic)
+- company_values: their stated values or mission (from the content)
+- team_info: any info about team size, structure, culture (from the content)
+- hiring_manager: name if discoverable from content, otherwise "Not found"
+- culture_notes: any cultural signals from the content
 - opportunity_type: "job_listing" if this is a specific job posting, "career_direct" if this is a company worth approaching directly (no current listing but good fit)
-- opportunity_title: The actual job title if known (e.g. "SEO Director", "Head of Growth"). If speculative, use format "Company Name - Career Direct"
-- score_rationale: 2-3 sentences explaining why this opportunity scored the way it did (relevance to Hans's skills, location fit, company quality)
-- application_questions: a JSON array of objects with "question" and "answer" fields. Predict the typical questions this company will ask on their application form. Pre-write answers as if you were Hans, based on his background. Keep answers to 2-3 sentences each. Make them sound like a real person wrote them, not a machine.
+- opportunity_title: The ACTUAL job title from the content (e.g. "SEO Director", "Head of Growth"). Do NOT use the URL domain as the title.
+- score_rationale: 2-3 sentences explaining why this opportunity scores the way it did (relevance to Hans's skills, location fit, company quality)
+- application_questions: a JSON array of objects with "question" and "answer" fields. Predict the typical questions this company will ask based on the ACTUAL JOB LISTING. Pre-write answers as if you were Hans. Keep answers to 2-3 sentences.
+
+IMPORTANT: Use the ACTUAL CONTENT from the job listing. Do NOT make generic assumptions. If the content says "Axios" is the company, use "Axios" — not "Job Boards" from the URL domain.
 
 Return ONLY valid JSON, no markdown.`;
 }

@@ -449,7 +449,7 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     return Response.redirect(new URL('/search?added=1', url).toString(), 302);
   }
 
-  // Add a job by URL — if it's a job board/company site, research it and find all opportunities
+  // Add a job by URL — scrape the page to find real company and job title
   if (p === '/api/ingest/url' && method === 'POST') {
     const body = await readBody(request);
     const jobUrl = String(body.url || '').trim();
@@ -460,91 +460,112 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
       return json({ success: false, error: 'invalid url' }, 400);
     }
 
-    const host = parsed.hostname.replace('www.', '');
-    const parts = host.split('.');
-    const company = parts[0].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+    // Scrape the actual page content
+    let pageTitle = '';
+    let pageContent = '';
+    let company = '';
+    let jobTitle = '';
 
-    // Check if this is a specific job listing or a company/job board website
-    const isSpecificJob = /greenhouse\.io|lever\.co|ashbyhq|workday|indeed\.com|linkedin\.com\/jobs|glassdoor|ziprecruiter|smartrecruiters/.test(jobUrl);
-
-    if (isSpecificJob) {
-      // Specific job listing — add directly
-      const result = await upsertJob(env, {
-        title: `Position at ${company}`,
-        company,
-        url: jobUrl,
-        source: 'manual',
-        description: `Job listing: ${jobUrl}`,
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(jobUrl, {
+        signal: controller.signal,
+        redirect: 'follow',
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
       });
-      await event(env, result.id, 'manual-add', jobUrl);
-      if (wantsHtmlRedirect(request)) {
-        return Response.redirect(new URL(`/apply/${result.id}`, url).toString(), 302);
-      }
-      return json({ success: true, ...result });
-    }
+      clearTimeout(timer);
+      if (res.ok) {
+        const html = await res.text();
+        // Extract title
+        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+        pageTitle = titleMatch ? titleMatch[1].trim() : '';
 
-    // Company website or job board — research it and find opportunities
-    const baseUrl = `${parsed.protocol}//${parsed.hostname}`;
+        // Strip HTML tags for content
+        pageContent = html
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 5000);
 
-    // Common career page paths
-    const careerPaths = ['/careers', '/jobs', '/join', '/hiring', '/work-with-us', '/career', '/employment', '/about/careers', '/company/careers'];
-    const foundPages: { url: string; title: string }[] = [];
+        // Try to extract company name from page content
+        // Greenhouse pattern: "Company Name" in the header or "at Company Name"
+        const greenhouseCompany = pageTitle.match(/(?:at|@)\s+([^-]+?)(?:\s*[-|]|\s*$)/i);
+        if (greenhouseCompany) {
+          company = greenhouseCompany[1].trim();
+        }
 
-    // Probe career page paths
-    for (const path of careerPaths) {
-      const probeUrl = `${baseUrl}${path}`;
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 5000);
-        const res = await fetch(probeUrl, {
-          signal: controller.signal,
-          redirect: 'follow',
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CareerBot/1.0)' },
-        });
-        clearTimeout(timer);
-        if (res.ok) {
-          const ct = res.headers.get('content-type') || '';
-          if (ct.includes('text/html')) {
-            foundPages.push({ url: probeUrl, title: `${company} careers` });
+        // Try to extract job title from page content
+        // Look for common patterns
+        const jobTitlePatterns = [
+          /(?:^|\n)\s*(?:job title|position|role):\s*(.+?)(?:\n|$)/i,
+          /<h1[^>]*>([^<]+)<\/h1>/i,
+          /<h2[^>]*>([^<]+)<\/h2>/i,
+          /class="[^"]*title[^"]*"[^>]*>([^<]+)</i,
+          /(?:^|\n)\s*((?:seo|aeo|ppc|growth|marketing|digital|webmaster|director|manager|head|lead|specialist|strategist|architect).{5,60}?)(?:\n|$)/i,
+        ];
+
+        for (const pattern of jobTitlePatterns) {
+          const match = pageContent.match(pattern) || html.match(pattern);
+          if (match) {
+            jobTitle = match[1].trim();
+            break;
           }
         }
-      } catch {}
-    }
 
-    // Add the main site as a research entry
-    const jobs: any[] = [{
-      title: `Research: ${company}`,
-      company,
-      url: baseUrl,
+        // If still no company, try to find it in the content
+        if (!company) {
+          const companyPatterns = [
+            /(?:about|company|employer):\s*([A-Z][^.]{2,40})/i,
+            /(?:at|@)\s+([A-Z][^.]{2,40})(?:\s+is\s|\s+in\s|\s*$)/i,
+          ];
+          for (const pattern of companyPatterns) {
+            const match = pageContent.match(pattern);
+            if (match) {
+              company = match[1].trim();
+              break;
+            }
+          }
+        }
+
+        // Fallback: extract from URL path
+        if (!company) {
+          const pathMatch = parsed.pathname.match(/\/([^/]+)\/jobs?\//);
+          if (pathMatch) {
+            company = pathMatch[1].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+          }
+        }
+
+        // Fallback: use hostname
+        if (!company) {
+          const host = parsed.hostname.replace('www.', '').replace('job-boards.', '').replace('boards.', '');
+          const parts = host.split('.');
+          company = parts[0].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+        }
+      }
+    } catch {}
+
+    // Use extracted info or fallback
+    const finalTitle = jobTitle || pageTitle || 'Position';
+    const finalCompany = company || 'Unknown';
+
+    // Create the job entry
+    const result = await upsertJob(env, {
+      title: finalTitle,
+      company: finalCompany,
+      url: jobUrl,
       source: 'manual',
-      description: `Company website: ${baseUrl}\nCareer pages found: ${foundPages.length}\n${foundPages.map(p => p.url).join('\n')}\n\nAdded manually. Research their career page for open positions.`,
-    }];
+      description: `Company: ${finalCompany}\nTitle: ${finalTitle}\nURL: ${jobUrl}\n\nPage content:\n${pageContent.slice(0, 2000)}`,
+    });
 
-    // Add each found career page as a separate opportunity
-    for (const page of foundPages) {
-      jobs.push({
-        title: `${company} — Career Page`,
-        company,
-        url: page.url,
-        source: 'manual-career',
-        description: `Career page: ${page.url}\nCompany: ${company}\nFound via site crawl from ${baseUrl}`,
-      });
-    }
-
-    // Ingest all found opportunities
-    let ids: string[] = [];
-    for (const job of jobs) {
-      const result = await upsertJob(env, job);
-      ids.push(result.id);
-    }
-
-    await event(env, null, 'site-crawl', `${baseUrl} → ${foundPages.length} career pages, ${ids.length} entries`);
+    await event(env, result.id, 'manual-add', `${finalTitle} @ ${finalCompany}`);
 
     if (wantsHtmlRedirect(request)) {
-      // Redirect to the first entry
-      return Response.redirect(new URL(`/apply/${ids[0]}`, url).toString(), 302);
+      return Response.redirect(new URL(`/apply/${result.id}`, url).toString(), 302);
     }
-    return json({ success: true, company, baseUrl, careerPages: foundPages.length, entries: ids.length, ids });
+    return json({ success: true, title: finalTitle, company: finalCompany, ...result });
   }
 
   // Training questions API
