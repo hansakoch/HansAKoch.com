@@ -422,6 +422,14 @@ export function mePage(linkedinConnected = false) {
       </div>
     </div>
 
+    <div class="card" style="border-color:${linkedinConnected ? '#4ade80' : '#facc15'}">
+      <h3 style="margin-bottom:12px">LinkedIn Integration</h3>
+      ${linkedinConnected
+        ? '<p style="color:#86efac">✓ Connected — company research and job enrichment active</p>'
+        : '<p style="color:#fde68a">Not connected — <a href="/api/linkedin/auth">Connect LinkedIn</a> to enable company research</p>'
+      }
+    </div>
+
     <div class="card">
       <h3 style="margin-bottom:12px">Locations & Phones</h3>
       <div style="display:grid;gap:12px">
