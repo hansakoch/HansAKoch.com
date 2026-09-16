@@ -170,7 +170,7 @@ export function applyPage(job: any, followUp = '', flash = '', research: any = n
       <p class="muted">${esc(job.company)} · ${esc(job.location)}</p>
       ${job.url ? `<p><a href="${esc(job.url)}" target="_blank" rel="noopener">View original →</a></p>` : ''}
       ${video ? '<p class="muted">This listing wants a video or custom essay. Download the packet, record, then the agent continues.</p>' : ''}
-      ${submitted ? `<div class="card" style="border-color:#4ade80"><p style="color:#bbf7d0">Submitted. You will be notified when the application is confirmed.</p></div>` : ''}
+      ${submitted ? `<div class="card" style="border-color:#4ade80"><p style="color:#bbf7d0">Submitted${job.scheduled_at ? `. Scheduled for ${new Date(job.scheduled_at).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}` : ''}. You will be notified when the application is confirmed.</p></div>` : ''}
       <div class="row">
         <form method="post" action="/api/jobs/${esc(job.id)}/approve"><button class="btn">${approved ? 'Re-approve' : 'Approve packet'}</button></form>
         ${approved && research?.career_page_url ? `<form method="post" action="/api/jobs/${esc(job.id)}/apply"><button class="btn pri">Apply via company site</button></form>` : ''}

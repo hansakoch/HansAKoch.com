@@ -37,6 +37,9 @@ function packetPrompt(
   } else if (loc.includes('remote') && (loc.includes('anywhere') || loc.includes('worldwide') || loc.includes('global') || loc.includes('international'))) {
     locationContext = 'Based in Cebu, Philippines. Available for any timezone. US citizen.';
     headerLocation = 'Cebu, PH';
+  } else if (loc.includes('canada') || loc.includes('toronto') || loc.includes('vancouver') || loc.includes('montreal') || loc.includes('ottawa')) {
+    locationContext = 'Based in Michigan, US. Open to Canada relocation or remote.';
+    headerLocation = 'Wayne, MI';
   } else if (loc.includes('remote') || loc.includes('anywhere')) {
     // Default US remote — use Michigan
     locationContext = 'Based in Wayne, Michigan. Remote US. Available immediately.';
@@ -44,9 +47,12 @@ function packetPrompt(
   } else if (loc.includes('texas') || loc.includes('austin') || loc.includes('dallas') || loc.includes('houston')) {
     locationContext = 'Based in Wayne, Michigan. Open to relocation or remote.';
     headerLocation = 'Wayne, MI';
-  } else if (loc.includes('philippines') || loc.includes('cebu') || loc.includes('asia') || loc.includes('singapore') || loc.includes('india') || loc.includes('egypt') || loc.includes('middle east') || loc.includes('dubai') || loc.includes('cairo')) {
+  } else if (loc.includes('philippines') || loc.includes('cebu') || loc.includes('manila')) {
     locationContext = 'Based in Cebu, Philippines. Available for any timezone.';
     headerLocation = 'Cebu, PH';
+  } else if (loc.includes('singapore') || loc.includes('asia') || loc.includes('apac') || loc.includes('japan') || loc.includes('korea') || loc.includes('hong kong') || loc.includes('egypt') || loc.includes('middle east') || loc.includes('dubai') || loc.includes('cairo') || loc.includes('india') || loc.includes('thailand') || loc.includes('vietnam') || loc.includes('indonesia') || loc.includes('malaysia')) {
+    locationContext = 'Based in Singapore. Available for APAC timezone.';
+    headerLocation = 'Singapore';
   } else if (loc.includes('uk') || loc.includes('london') || loc.includes('manchester') || loc.includes('united kingdom') || loc.includes('england')) {
     locationContext = 'Based in Manchester, UK. Available immediately.';
     headerLocation = 'Manchester, UK';

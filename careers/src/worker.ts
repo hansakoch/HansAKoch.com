@@ -178,6 +178,50 @@ async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: st
   return { id: row.id, verdict, status, score };
 }
 
+function scheduleForBusinessHours(location: string): string {
+  // Determine timezone offset based on location
+  const loc = (location || '').toLowerCase();
+  let utcOffset = -5; // Default: US Eastern
+
+  if (loc.includes('california') || loc.includes('san francisco') || loc.includes('los angeles') || loc.includes('west coast')) {
+    utcOffset = -8; // Pacific
+  } else if (loc.includes('michigan') || loc.includes('detroit') || loc.includes('east coast')) {
+    utcOffset = -5; // Eastern
+  } else if (loc.includes('texas') || loc.includes('chicago')) {
+    utcOffset = -6; // Central
+  } else if (loc.includes('uk') || loc.includes('london') || loc.includes('manchester')) {
+    utcOffset = 0; // GMT
+  } else if (loc.includes('singapore') || loc.includes('asia') || loc.includes('philippines') || loc.includes('egypt')) {
+    utcOffset = 8; // SGT/PH
+  } else if (loc.includes('uae') || loc.includes('dubai')) {
+    utcOffset = 4; // GST
+  } else if (loc.includes('australia') || loc.includes('sydney')) {
+    utcOffset = 11; // AEDT
+  } else if (loc.includes('italy') || loc.includes('europe')) {
+    utcOffset = 1; // CET
+  }
+
+  // Calculate next business hour (9 AM - 4 PM) in target timezone
+  const now = new Date();
+  const targetHour = 9; // 9 AM local
+  const target = new Date(now);
+
+  // Convert to target timezone
+  const currentUtcHour = now.getUTCHours();
+  const targetUtcHour = (targetHour - utcOffset + 24) % 24;
+
+  // If it's already past 4 PM in target timezone, schedule for next day
+  const targetEndUtcHour = (16 - utcOffset + 24) % 24;
+
+  if (currentUtcHour >= targetEndUtcHour || currentUtcHour < targetUtcHour) {
+    // Schedule for 9 AM tomorrow in target timezone
+    target.setUTCDate(target.getUTCDate() + 1);
+  }
+
+  target.setUTCHours(targetUtcHour, Math.floor(Math.random() * 60), 0, 0);
+  return target.toISOString();
+}
+
 function submitWatch(method: string, env: Env): { watch: string; nextStatus: string } {
   if (method === 'cf_browser') {
     return {
@@ -411,14 +455,15 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
         return json({ success: false, error: 'approve packet first' }, 400);
       }
       const method = job.method || 'needs_you';
+      const scheduledAt = scheduleForBusinessHours(job.location || '');
       const { watch, nextStatus } = submitWatch(method, env);
-      await env.DB.prepare('UPDATE jobs SET status=?, updated_at=? WHERE id=?').bind(nextStatus, now, id).run();
-      await event(env, id, 'submit', `${method} ${watch}`);
-      await remember(env, `Apply queued ${job.title} @ ${job.company} via ${method}`);
+      await env.DB.prepare('UPDATE jobs SET status=?, scheduled_at=?, updated_at=? WHERE id=?').bind(nextStatus, scheduledAt, now, id).run();
+      await event(env, id, 'submit', `${method} scheduled for ${scheduledAt}`);
+      await remember(env, `Apply queued ${job.title} @ ${job.company} via ${method} for ${scheduledAt}`);
       if (wantsHtmlRedirect(request)) {
         return Response.redirect(new URL(`/apply/${id}?submitted=1`, url).toString(), 302);
       }
-      return json({ success: true, method, status: nextStatus, watch, packet: { resume_md: job.resume_md, cover_md: job.cover_md, url: job.url } });
+      return json({ success: true, method, status: nextStatus, scheduledAt, watch, packet: { resume_md: job.resume_md, cover_md: job.cover_md, url: job.url } });
     }
   }
 
