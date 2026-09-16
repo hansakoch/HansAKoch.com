@@ -339,10 +339,9 @@ AI Enablement & Automation Architect with 27+ years in digital marketing. Direct
 EXPERIENCE
 
 AI Systems Architect & Founder — OpenRoyleAl.com (Jan 2025 – Present)
-• Sovereign AI infrastructure on Cloudflare Workers, D1, Durable Objects
-• Multi-node distributed task execution, 6-second average latency
-• 63+ API keys and secrets managed in D1
-• Built Alfred — AI assistant with persistent memory
+• Sovereign AI infrastructure on Cloudflare: Workers AI, Agents SDK, AI Gateway, Browser Run, Artifacts
+• Multi-node distributed task orchestration across edge and origin
+• Built Alfred — autonomous AI assistant with persistent memory and voice
 
 Agency Director & AI Transition Lead — Iceberg Media (2012 – Present)
 • Strategic pivot from SEO agency to AI services

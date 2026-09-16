@@ -41,9 +41,19 @@ function packetPrompt(
     locationContext = 'Based in Michigan, US. Open to Canada relocation or remote.';
     headerLocation = 'Wayne, MI';
   } else if (loc.includes('remote') || loc.includes('anywhere')) {
-    // Default US remote — use Michigan
-    locationContext = 'Based in Wayne, Michigan. Remote US. Available immediately.';
-    headerLocation = 'Wayne, MI';
+    // Remote US — check company HQ or description for coast hints
+    const desc = (job.description || '').toLowerCase();
+    const titleLower = (job.title || '').toLowerCase();
+    if (desc.includes('san francisco') || desc.includes('los angeles') || desc.includes('bay area') || desc.includes('silicon valley') || desc.includes('seattle') || desc.includes('portland') || desc.includes('west coast')) {
+      locationContext = 'Based in San Luis Obispo, California. Remote US.';
+      headerLocation = 'SLO, CA';
+    } else if (desc.includes('new york') || desc.includes('boston') || desc.includes('dc') || desc.includes('washington') || desc.includes('atlanta') || desc.includes('miami') || desc.includes('east coast')) {
+      locationContext = 'Based in Wayne, Michigan. Remote US.';
+      headerLocation = 'Wayne, MI';
+    } else {
+      locationContext = 'Based in Wayne, Michigan. Remote US. Available immediately.';
+      headerLocation = 'Wayne, MI';
+    }
   } else if (loc.includes('texas') || loc.includes('austin') || loc.includes('dallas') || loc.includes('houston')) {
     locationContext = 'Based in Wayne, Michigan. Open to relocation or remote.';
     headerLocation = 'Wayne, MI';
@@ -121,7 +131,10 @@ HANS'S CAREER TIMELINE (use these EXACTLY, do not combine):
 - 27+ years in digital marketing (since 1999)
 - 14 years as Director/CMO of Iceberg Media (2012-present)
 - Building autonomous AI agents on Cloudflare since January 2025
+- Sovereign AI infrastructure: Workers AI, Agents SDK, AI Gateway, Browser Run, Artifacts
 - Early adopter of OpenClaw (started Jan 2025 at 18.7K stars, now 388K+)
+
+NEVER mention: API keys, secrets, latency numbers, internal infrastructure details. That's security-sensitive.
 
 These are SEPARATE facts. Do NOT write "14 years building AI agents since 2025" — that's wrong.
 
@@ -233,10 +246,9 @@ hansakoch.com · linkedin.com/in/hansakochcom · github.com/hansakoch · x.com/h
 EXPERIENCE
 
 AI Systems Architect & Founder — OpenRoyleAl.com (Jan 2025 – Present)
-• Sovereign AI infrastructure on Cloudflare Workers, D1, Durable Objects
-• Multi-node distributed task execution, 6-second average latency
-• 63+ API keys and secrets managed in D1
-• Built Alfred — AI assistant with persistent memory
+• Sovereign AI infrastructure on Cloudflare: Workers AI, Agents SDK, AI Gateway, Browser Run, Artifacts
+• Multi-node distributed task orchestration across edge and origin
+• Built Alfred — autonomous AI assistant with persistent memory and voice
 
 Agency Director & AI Transition Lead — Iceberg Media (2012 – Present)
 • Strategic pivot from SEO agency to AI services
