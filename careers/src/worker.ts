@@ -1052,42 +1052,48 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
   }
 
   if (url.pathname === '/review') {
-    // LinkedIn profile review items
     const reviewItems = [
       {
         id: 'headline',
         section: 'Headline',
         current: 'Agency Search Director @ Iceberg Media | SEO Credentials',
         proposed: 'AI Systems Architect | Director of Agent Optimization | Building Autonomous Systems on Cloudflare',
-        approved: false,
+        approved: true,
       },
       {
         id: 'summary',
         section: 'Summary',
-        current: 'Agency Search Director at Iceberg Media. 11 years experience in SEO/PPC. Passion for search and web technology.',
-        proposed: 'I build agents that don\'t sleep. 27+ years in digital marketing, 14 years as Director & CMO of Iceberg Media. Now architecting autonomous AI systems on Cloudflare infrastructure that run 24/7 across distributed nodes. Early on OpenClaw (Jan 2025 at 18.7K stars, now 388K+). Organizer of OpenClaw Cebu community. Managing 145+ domains, 160 Google Business Profiles, and autonomous agents that research, score, and execute business operations without human intervention.',
-        approved: false,
+        current: 'Agency Search Director at Iceberg Media. 11 years experience in SEO/PPC.',
+        proposed: 'I build agents that don\'t sleep. 27+ years in digital marketing, 14 years as Director & CMO of Iceberg Media. Now architecting autonomous AI systems on Cloudflare infrastructure that run 24/7 across distributed nodes. Early on OpenClaw (Jan 2025 at 18.7K stars, now 388K+). Organizer of OpenClaw Cebu community. Managing 145+ domains, 160 Google Business Profiles, and autonomous agents that research, score, and execute business operations without human intervention. I don\'t sell. I build the machine.',
+        approved: true,
       },
       {
         id: 'skills',
         section: 'Skills',
         current: 'GHL, Go HighLevel, SEO (3 skills)',
-        proposed: 'Cloudflare Workers, TypeScript, Python, AI Agents, Autonomous Systems, SEO, AEO, PPC, ORM, Google Analytics, D1, Durable Objects, OpenClaw, Prompt Engineering, LLM Orchestration, GitHub Actions, Google Ads, Team Leadership (20+ skills)',
-        approved: false,
+        proposed: 'Cloudflare Workers, D1, Durable Objects, TypeScript, Python, AI Agents, Autonomous Systems, SEO, AEO, GEO, PPC, ORM, Google Analytics, Google Ads, OpenClaw, Prompt Engineering, LLM Orchestration, GitHub Actions, Team Leadership, Strategic Planning (20+ skills)',
+        approved: true,
       },
       {
         id: 'openroyleal',
         section: 'New Role: OpenRoyleAl (Jan 2025 – Present)',
         current: '(not on LinkedIn)',
-        proposed: 'AI Systems Architect & Founder\n• Sovereign AI infrastructure on Cloudflare: Workers AI, Agents SDK, AI Gateway, Browser Run\n• Multi-node distributed task orchestration across edge and origin\n• Built Alfred — autonomous AI assistant with persistent memory and voice\n• Built Alfred.report — AI-powered signal processing and growth engine',
-        approved: false,
+        proposed: 'AI Systems Architect & Founder\n• Sovereign AI infrastructure on Cloudflare: Workers AI, Agents SDK, AI Gateway, Browser Run\n• Multi-node distributed task orchestration across edge and origin\n• Built Alfred — autonomous AI assistant with persistent memory and voice\n• Built Alfred.report — AI-powered signal processing and growth engine\n• Created ThanksU.org — review generation platform',
+        approved: true,
       },
       {
         id: 'iceberg',
         section: 'Update: Iceberg Media Description',
         current: 'Built and manage Agency brands. SEO4Tradesmen, SEO4Instructors, etc.',
         proposed: 'Leading strategic pivot from 14-year SEO agency to AI services company. Transitioned pricing from £300/month retainers to £20K–£35K enterprise AI agent implementation projects. Cloudflare-first architecture across 145+ domains. Managing 160 Google Business Profiles. Teams of 10+ across US, UK, Philippines.',
-        approved: false,
+        approved: true,
+      },
+      {
+        id: 'speaking',
+        section: 'Speaking Engagements',
+        current: '(not on LinkedIn)',
+        proposed: '12+ speaking engagements including:\n• 2011 — 5th SEMCON — "Searching For Deals: How Group Buying Harnesses Search"\n• 2010 — WordCamp Philippines — "WPPlugins Must-Haves"\n• 2009 — SEMCON — "Business Models for Social Network Sites"\n• 2008 — SEMCON Philippines — "Search Arbitrage"\n• 2008 — WordCamp Philippines — "WordPress for Corporate Web Sites"\n• 2006 — National Defense College of the Philippines — 3-day seminar on Web 2.0, SEO, Ruby on Rails',
+        approved: true,
       },
     ];
 
