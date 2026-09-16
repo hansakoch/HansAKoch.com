@@ -75,6 +75,8 @@ Rules:
 - Sound like someone who has actually done this work for 27 years, not someone describing it.
 - Be specific. Name the tools, the numbers, the outcomes.
 - If the cover letter is 4 paragraphs, that's fine. If it's 3, also fine. Don't pad.
+- NEVER use placeholders like [X], [specific area], [company name], [years]. Use actual data from Hans's background.
+- If asked about years of experience, use "27+ years" in digital marketing, "14 years" as Director/CMO.
 
 HANS'S BACKGROUND:
 ${resumeText}

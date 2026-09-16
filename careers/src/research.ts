@@ -60,7 +60,16 @@ TASK: Based on the ACTUAL CONTENT above (not generic assumptions), generate a JS
 - opportunity_type: "job_listing" if this is a specific job posting, "career_direct" if this is a company worth approaching directly (no current listing but good fit)
 - opportunity_title: The ACTUAL job title from the content (e.g. "SEO Director", "Head of Growth"). Do NOT use the URL domain as the title.
 - score_rationale: 2-3 sentences explaining why this opportunity scores the way it did (relevance to Hans's skills, location fit, company quality)
-- application_questions: a JSON array of objects with "question" and "answer" fields. Predict the typical questions this company will ask based on the ACTUAL JOB LISTING. Pre-write answers as if you were Hans. Keep answers to 2-3 sentences.
+- application_questions: a JSON array of objects with "question" and "answer" fields. Predict the typical questions this company will ask based on the ACTUAL JOB LISTING. Pre-write answers as if you were Hans, using his ACTUAL data:
+  * 27+ years digital marketing experience
+  * 14 years Director/CMO of Iceberg Media
+  * 145+ domains, 160 Google Business Profiles
+  * Building autonomous AI agents on Cloudflare since 2025
+  * Early adopter of OpenClaw (Jan 2025, 18.7K → 388K stars)
+  * SEO/AEO/PPC/ORM expertise
+  * TypeScript, Python, Cloudflare Workers, D1
+  * Teams of 10+ across US, UK, Philippines
+  DO NOT use placeholders like [X] or [specific area]. Use actual numbers and details.
 
 IMPORTANT: Use the ACTUAL CONTENT from the job listing. Do NOT make generic assumptions. If the content says "Axios" is the company, use "Axios" — not "Job Boards" from the URL domain.
 
