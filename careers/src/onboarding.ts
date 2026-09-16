@@ -13,8 +13,8 @@ export const ONBOARDING_ITEMS: OnboardingItem[] = [
   },
   {
     key: 'proxy_rotation',
-    label: '2. Proxy rotation ready',
-    detail: 'alfred-proxy hide.me WireGuard tunnels provide 10 exit IPs. Browser Use Cloud has built-in proxy rotation.',
+    label: '2. Proxy rotation configured (if needed)',
+    detail: 'Browser Run exits via Cloudflare IPs — no built-in proxy rotation. For rotating exit IPs, configure a third-party proxy service and pass it to browser sessions via Puppeteer proxy settings. hide.me VPN (third-party) or similar services can provide this.',
   },
   {
     key: 'address_notes',
