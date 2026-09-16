@@ -1,13 +1,12 @@
-/** Browser-based application — fills forms and submits via CF Browser or Browser Use Cloud. */
-
-import { RESUME } from '../resume-data.ts';
+/** Browser Run — automated form filling and submission via Cloudflare Browser. */
 
 export type ApplyResult = {
   success: boolean;
   method: string;
-  screenshot?: string;
   error?: string;
-  confirmationId?: string;
+  pageTitle?: string;
+  screenshot?: string;
+  formsFound?: number;
 };
 
 /** Hans's profile data for form filling. */
@@ -17,16 +16,14 @@ const PROFILE = {
   fullName: 'Hans Al Koch',
   email: 'hans@hansakoch.com',
   phone: '+13135558675',
-  altPhone: '+14156831016',
   location: 'Wayne, MI',
   linkedin: 'https://linkedin.com/in/hansakochcom',
   github: 'https://github.com/hansakoch',
   website: 'https://hansakoch.com',
-  summary: RESUME.basics.summary,
 };
 
 /** Common form field selectors for ATS platforms. */
-const FORM_SELECTORS: Record<string, Record<string, string>> = {
+const SELECTORS: Record<string, Record<string, string>> = {
   greenhouse: {
     firstName: 'input[name="job_application[first_name]"], #first_name',
     lastName: 'input[name="job_application[last_name]"], #last_name',
@@ -51,8 +48,7 @@ const FORM_SELECTORS: Record<string, Record<string, string>> = {
     resume: 'input[type="file"]',
     submit: 'button[type="submit"]',
   },
-  custom: {
-    // Generic selectors for custom career pages
+  generic: {
     firstName: 'input[name*="first"], input[name*="First"], input[placeholder*="First"]',
     lastName: 'input[name*="last"], input[name*="Last"], input[placeholder*="Last"]',
     email: 'input[type="email"], input[name*="email"], input[placeholder*="email"]',
@@ -62,44 +58,154 @@ const FORM_SELECTORS: Record<string, Record<string, string>> = {
   },
 };
 
-/** Build a research summary for the cover letter. */
-export function buildResearchContext(research: { company_about?: string; company_values?: string; culture_notes?: string } | null): string {
-  if (!research) return '';
-  const parts: string[] = [];
-  if (research.company_about) parts.push(`About: ${research.company_about}`);
-  if (research.company_values) parts.push(`Values: ${research.company_values}`);
-  if (research.culture_notes) parts.push(`Culture: ${research.culture_notes}`);
-  return parts.join('\n');
+/** Detect ATS type from URL. */
+export function detectAts(url: string): string {
+  const host = url.toLowerCase();
+  if (host.includes('greenhouse')) return 'greenhouse';
+  if (host.includes('lever')) return 'lever';
+  if (host.includes('ashby')) return 'ashby';
+  if (host.includes('workday')) return 'workday';
+  if (host.includes('smartrecruiters')) return 'smartrecruiters';
+  if (host.includes('icims')) return 'icims';
+  if (host.includes('bamboohr')) return 'bamboohr';
+  if (host.includes('jobvite')) return 'jobvite';
+  return 'generic';
 }
 
-/** Generate answers for custom application questions using AI. */
-export async function generateAnswer(
-  env: { AI?: Ai },
-  question: string,
-  jobContext: string,
-): Promise<string> {
-  if (!env.AI) return '';
+/** Fill form fields on the page. */
+async function fillForm(page: any, atsType: string, resumeText: string, coverText: string): Promise<{ filled: string[]; errors: string[] }> {
+  const selectors = SELECTORS[atsType] || SELECTORS.generic;
+  const filled: string[] = [];
+  const errors: string[] = [];
 
+  // Fill name
   try {
-    const response = await env.AI.run('@cf/meta/llama-3.2-3b-instruct', {
-      messages: [
-        {
-          role: 'system',
-          content: `You are helping Hans Al Koch answer job application questions. Be concise, professional, and specific. Hans is an AI Enablement & Automation Architect with 27+ years in digital marketing, 14 years as Director/CMO of Iceberg Media, and builds autonomous AI agents on Cloudflare.`,
-        },
-        {
-          role: 'user',
-          content: `Job context: ${jobContext.slice(0, 1000)}\n\nQuestion: ${question}\n\nAnswer in 2-3 sentences:`,
-        },
-      ],
-      max_tokens: 256,
-      temperature: 0.5,
-    });
-    const text = typeof response === 'object' && 'response' in response ? (response as any).response : String(response);
-    return text.trim();
-  } catch {
-    return '';
+    const firstNameInput = await page.$(selectors.firstName);
+    if (firstNameInput) {
+      await firstNameInput.click({ clickCount: 3 });
+      await firstNameInput.type(PROFILE.firstName, { delay: 50 });
+      filled.push('firstName');
+    }
+  } catch (e: any) { errors.push(`firstName: ${e.message}`); }
+
+  // Fill last name (if separate field)
+  if (selectors.lastName) {
+    try {
+      const lastNameInput = await page.$(selectors.lastName);
+      if (lastNameInput) {
+        await lastNameInput.click({ clickCount: 3 });
+        await lastNameInput.type(PROFILE.lastName, { delay: 50 });
+        filled.push('lastName');
+      }
+    } catch (e: any) { errors.push(`lastName: ${e.message}`); }
+  }
+
+  // Fill email
+  try {
+    const emailInput = await page.$(selectors.email);
+    if (emailInput) {
+      await emailInput.click({ clickCount: 3 });
+      await emailInput.type(PROFILE.email, { delay: 50 });
+      filled.push('email');
+    }
+  } catch (e: any) { errors.push(`email: ${e.message}`); }
+
+  // Fill phone
+  try {
+    const phoneInput = await page.$(selectors.phone);
+    if (phoneInput) {
+      await phoneInput.click({ clickCount: 3 });
+      await phoneInput.type(PROFILE.phone, { delay: 50 });
+      filled.push('phone');
+    }
+  } catch (e: any) { errors.push(`phone: ${e.message}`); }
+
+  // Fill cover letter
+  if (selectors.coverLetter) {
+    try {
+      const coverInput = await page.$(selectors.coverLetter);
+      if (coverInput) {
+        await coverInput.click({ clickCount: 3 });
+        await coverInput.type(coverText.slice(0, 2000), { delay: 10 });
+        filled.push('coverLetter');
+      }
+    } catch (e: any) { errors.push(`coverLetter: ${e.message}`); }
+  }
+
+  return { filled, errors };
+}
+
+/** Submit the form. */
+async function submitForm(page: any, atsType: string): Promise<{ submitted: boolean; error?: string }> {
+  const selectors = SELECTORS[atsType] || SELECTORS.generic;
+  try {
+    const submitBtn = await page.$(selectors.submit);
+    if (submitBtn) {
+      await submitBtn.click();
+      await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 15000 }).catch(() => {});
+      return { submitted: true };
+    }
+    return { submitted: false, error: 'No submit button found' };
+  } catch (e: any) {
+    return { submitted: false, error: e.message };
   }
 }
 
-export { PROFILE, FORM_SELECTORS };
+/** Main apply function — navigates to career page, fills form, submits. */
+export async function applyViaBrowser(
+  env: { BROWSER?: Fetcher },
+  job: { id: string; title: string; company: string; url?: string; location?: string },
+  careerUrl: string,
+  resumeText: string,
+  coverText: string,
+): Promise<ApplyResult> {
+  if (!env.BROWSER) {
+    return { success: false, method: 'cf_browser', error: 'Browser Run not bound' };
+  }
+
+  try {
+    const puppeteer = await import('@cloudflare/puppeteer');
+    const browser = await puppeteer.default.launch(env.BROWSER);
+    const page = await browser.newPage();
+
+    // Set realistic user agent
+    await page.setUserAgent(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    );
+
+    // Navigate to career page
+    await page.goto(careerUrl, { waitUntil: 'networkidle0', timeout: 30000 });
+    const pageTitle = await page.title();
+
+    // Detect ATS type
+    const atsType = detectAts(careerUrl);
+
+    // Try to find and click "Apply" button if we're on a career page (not direct application)
+    const applyBtn = await page.$('a[href*="apply"], button:has-text("Apply"), a:has-text("Apply Now"), a:has-text("Apply")');
+    if (applyBtn) {
+      await applyBtn.click();
+      await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 15000 }).catch(() => {});
+    }
+
+    // Fill the form
+    const { filled, errors } = await fillForm(page, atsType, resumeText, coverText);
+
+    // Submit
+    const { submitted, error: submitError } = await submitForm(page, atsType);
+
+    // Get confirmation page
+    const confirmTitle = await page.title();
+    const confirmUrl = page.url();
+
+    await browser.close();
+
+    return {
+      success: submitted && filled.length > 0,
+      method: 'cf_browser',
+      pageTitle: `${pageTitle} → ${confirmTitle}`,
+      formsFound: filled.length,
+    };
+  } catch (e: any) {
+    return { success: false, method: 'cf_browser', error: e.message };
+  }
+}

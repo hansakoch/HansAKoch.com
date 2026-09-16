@@ -14,6 +14,7 @@ import { ONBOARDING_ITEMS, ensureOnboardingRows, getOnboardingState, setOnboardi
 import { generateResearch, storeResearch, getResearch, type CompanyResearch } from './research.ts';
 import { generatePacket, templatePacket, storePacketVersion, getPacketVersions, getLatestVersion } from './ai-packet.ts';
 import { findCareerPage, detectAtsType } from './career-finder.ts';
+import { applyViaBrowser, detectAts } from './apply/browser-apply.ts';
 
 export interface Env {
   DB: D1Database;
@@ -887,59 +888,29 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     }
 
     const research = await getResearch(env.DB, id);
-    const careerUrl = research?.career_page_url || '';
-    const atsType = careerUrl ? detectAtsType(careerUrl) : 'unknown';
+    const careerUrl = research?.career_page_url || job.url || '';
 
-    // If we have a career page URL and CF Browser, attempt automated apply
-    if (careerUrl && env.BROWSER) {
-      try {
-        // Dynamically import puppeteer only when needed
-        const puppeteer = await import('@cloudflare/puppeteer');
-        const browser = await puppeteer.default.launch(env.BROWSER);
-        const page = await browser.newPage();
-        await page.goto(careerUrl, { waitUntil: 'networkidle0', timeout: 30000 });
-        const pageTitle = await page.title();
-        const screenshot = await page.screenshot({ type: 'png', fullPage: true }) as unknown as Buffer;
-        await browser.close();
-
-        const now = new Date().toISOString();
-        await env.DB.prepare('UPDATE jobs SET status=?, method=?, updated_at=? WHERE id=?')
-          .bind('applying', 'cf_browser', now, id)
-          .run();
-        await event(env, id, 'browser-apply', `navigated to ${careerUrl} ats=${atsType} title=${pageTitle}`);
-
-        if (wantsHtmlRedirect(request)) {
-          return Response.redirect(new URL(`/apply/${id}?navigated=1`, url).toString(), 302);
-        }
-        return json({
-          success: true,
-          method: 'cf_browser',
-          careerUrl,
-          atsType,
-          pageTitle,
-          note: 'Career page loaded. Form filling requires session persistence — use Live View for now.',
-        });
-      } catch (e: any) {
-        await event(env, id, 'browser-apply-error', e?.message || 'unknown');
-        // Fall through to manual
-      }
+    if (!careerUrl) {
+      return json({ success: false, error: 'No career page URL found. Research the company first.' }, 400);
     }
 
-    // Fallback: show instructions
-    const method = careerUrl ? 'cf_browser' : 'needs_you';
-    const watch = careerUrl
-      ? `Apply at: ${careerUrl}\nATS type: ${atsType}\nUse CF Browser Live View to fill and submit.`
-      : `Find the career page for ${job.company} and apply directly.\nDo NOT use LinkedIn Easy Apply — go to their website.`;
+    // Try Browser Run
+    const result = await applyViaBrowser(env, job, careerUrl, job.resume_md || '', job.cover_md || '');
 
-    await env.DB.prepare('UPDATE jobs SET status=?, updated_at=? WHERE id=?')
-      .bind('needs_you', new Date().toISOString(), id)
-      .run();
-    await event(env, id, 'apply-instructions', watch.slice(0, 200));
+    if (result.success) {
+      await env.DB.prepare('UPDATE jobs SET status=?, updated_at=? WHERE id=?').bind('applied', new Date().toISOString(), id).run();
+      await event(env, id, 'applied', `Browser Run: ${result.pageTitle}`);
+    } else {
+      // Fall back to queued
+      const scheduledAt = scheduleForBusinessHours(job.location || '');
+      await env.DB.prepare('UPDATE jobs SET status=?, scheduled_at=?, updated_at=? WHERE id=?').bind('queued', scheduledAt, new Date().toISOString(), id).run();
+      await event(env, id, 'apply-fallback', result.error || 'Browser Run failed, queued for retry');
+    }
 
     if (wantsHtmlRedirect(request)) {
       return Response.redirect(new URL(`/apply/${id}?submitted=1`, url).toString(), 302);
     }
-    return json({ success: true, method, careerUrl, atsType, watch });
+    return json({ success: result.success, method: result.method, error: result.error, pageTitle: result.pageTitle });
   }
 
   return null;
@@ -1100,6 +1071,36 @@ export default {
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(
       (async () => {
+        // Process scheduled applications
+        const now = new Date().toISOString();
+        const { results: dueJobs } = await env.DB.prepare(
+          "SELECT * FROM jobs WHERE status = 'queued' AND scheduled_at IS NOT NULL AND scheduled_at <= ? ORDER BY scheduled_at ASC LIMIT 5"
+        ).bind(now).all<any>();
+
+        for (const job of dueJobs || []) {
+          try {
+            const research = await getResearch(env.DB, job.id);
+            const careerUrl = research?.career_page_url || job.url || '';
+            if (!careerUrl) {
+              await env.DB.prepare("UPDATE jobs SET status='needs_you', updated_at=? WHERE id=?").bind(now, job.id).run();
+              continue;
+            }
+
+            const result = await applyViaBrowser(env, job, careerUrl, job.resume_md || '', job.cover_md || '');
+            if (result.success) {
+              await env.DB.prepare("UPDATE jobs SET status='applied', updated_at=? WHERE id=?").bind(now, job.id).run();
+              await event(env, job.id, 'applied', `Browser Run: ${result.pageTitle}`);
+            } else {
+              await env.DB.prepare("UPDATE jobs SET status='needs_you', updated_at=? WHERE id=?").bind(now, job.id).run();
+              await event(env, job.id, 'apply-failed', result.error || 'unknown');
+            }
+          } catch (e: any) {
+            await env.DB.prepare("UPDATE jobs SET status='needs_you', updated_at=? WHERE id=?").bind(now, job.id).run();
+            await event(env, job.id, 'apply-error', e?.message || 'unknown');
+          }
+        }
+
+        // Also run search
         const plan = planSearch(DEFAULT_PROFILE, env);
         await kickSearch(plan);
         await sendDigest(env, 'https://careers.hansakoch.com');
