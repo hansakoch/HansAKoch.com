@@ -672,6 +672,111 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     return json({ success: true, title: finalTitle, company: finalCompany, ...result });
   }
 
+  // Deep probe: use Browser Run to find jobs, start applications, document questions
+  if (p === '/api/probe' && method === 'POST') {
+    if (!env.BROWSER) return json({ success: false, error: 'Browser Run not bound' }, 500);
+
+    const body = await readBody(request);
+    const companyUrl = String(body.url || '');
+    const company = String(body.company || '');
+
+    if (!companyUrl) return json({ success: false, error: 'url required' }, 400);
+
+    try {
+      const puppeteer = await import('@cloudflare/puppeteer');
+      const browser = await puppeteer.default.launch(env.BROWSER);
+      const page = await browser.newPage();
+
+      // Step 1: Navigate to career page
+      await page.goto(companyUrl, { waitUntil: 'networkidle0', timeout: 20000 });
+      const pageText = await page.evaluate(() => document.body.innerText);
+
+      // Step 2: Find job listings
+      const jobLinks = await page.evaluate(() => {
+        const links = Array.from(document.querySelectorAll('a[href]'));
+        return links
+          .filter(a => {
+            const href = (a as HTMLAnchorElement).href || '';
+            const text = (a as HTMLElement).innerText || '';
+            return (href.includes('apply') || href.includes('job') || href.includes('position') || 
+                    text.toLowerCase().match(/(seo|growth|marketing|ai|agent|director|manager)/));
+          })
+          .map(a => ({ url: (a as HTMLAnchorElement).href, title: (a as HTMLElement).innerText.trim() }))
+          .filter(j => j.title.length > 3)
+          .slice(0, 10);
+      });
+
+      // Step 3: For the first relevant job, start the application
+      let questions: string[] = [];
+      let applicationUrl = '';
+      let jobTitle = '';
+
+      for (const job of jobLinks) {
+        if (job.title.toLowerCase().match(/(seo|growth|marketing|ai|agent|director|manager|lead)/)) {
+          applicationUrl = job.url;
+          jobTitle = job.title;
+          
+          // Navigate to the application
+          await page.goto(job.url, { waitUntil: 'networkidle0', timeout: 20000 });
+          const appText = await page.evaluate(() => document.body.innerText);
+          
+          // Extract questions from the page
+          const questionPatterns = [
+            /(?:please|tell us|describe|explain|what|how|why|when)[^.?!]{10,200}[?!]/gi,
+            /(?:experience with|knowledge of|familiarity with)[^.]{10,100}/gi,
+          ];
+          for (const pattern of questionPatterns) {
+            const matches = appText.match(pattern) || [];
+            questions.push(...matches.slice(0, 5));
+          }
+          
+          // Find form fields
+          const formFields = await page.evaluate(() => {
+            const inputs = Array.from(document.querySelectorAll('input, textarea, select'));
+            return inputs.map(el => ({
+              type: (el as HTMLInputElement).type || el.tagName.toLowerCase(),
+              name: (el as HTMLInputElement).name || '',
+              placeholder: (el as HTMLInputElement).placeholder || '',
+              label: (el as HTMLInputElement).labels?.[0]?.textContent || '',
+            })).filter(f => f.name || f.placeholder);
+          });
+          
+          break;
+        }
+      }
+
+      await browser.close();
+
+      // Save to D1
+      const now = new Date().toISOString();
+      await env.DB.prepare(
+        `INSERT INTO research (job_id, company_url, career_page_url, company_about, company_values, team_info, hiring_manager, culture_notes, application_questions, opportunity_type, opportunity_title, score_rationale, researched_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(job_id) DO UPDATE SET
+           company_about=excluded.company_about, application_questions=excluded.application_questions,
+           opportunity_title=excluded.opportunity_title, researched_at=excluded.researched_at`
+      ).bind(
+        company, companyUrl, companyUrl, pageText.slice(0, 500),
+        '', '', '', '', JSON.stringify(questions),
+        'job_listing', jobTitle || 'Career Direct',
+        `Found ${jobLinks.length} job links, ${questions.length} questions`, now
+      ).run();
+
+      return json({
+        success: true,
+        company,
+        jobsFound: jobLinks.length,
+        jobLinks: jobLinks.slice(0, 5),
+        bestJob: jobTitle,
+        applicationUrl,
+        questions: questions.slice(0, 5),
+      });
+
+    } catch (e: any) {
+      return json({ success: false, error: e.message });
+    }
+  }
+
   // Review: handle form submission with comments
   if (p === '/api/review/approve' && method === 'POST') {
     const body = await readBody(request);
