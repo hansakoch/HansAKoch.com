@@ -592,7 +592,19 @@ export function searchPage(queries: { term: string; location: string }[], status
   );
 }
 
-export function companiesPage(companies: any[], pendingTasks = 0) {
+export function companiesPage(companies: any[], pendingTasks = 0, sourceFilter = '') {
+  const sources = ['all', 'yc', 'speedrun', 'email', 'jobspy', 'pipeline', 'newsletter', 'manual'];
+  const sourceLabels: Record<string, string> = {
+    all: 'All', yc: 'YC', speedrun: 'Speedrun', email: 'Email',
+    jobspy: 'JobSpy', pipeline: 'Pipeline', newsletter: 'Newsletter', manual: 'Manual'
+  };
+
+  const sourceTabs = sources.map(s => {
+    const label = sourceLabels[s] || s;
+    const isActive = (sourceFilter || 'all') === s;
+    return `<a class="btn" href="/companies?source=${s}" style="${isActive ? 'border-color:#ff4444;color:#ff4444' : ''}">${label}</a>`;
+  }).join(' ');
+
   const cards = companies.map(c => {
     const hasJobs = (c.job_count || 0) > 0;
     const hasCareerPage = !!c.career_page_url;
@@ -621,6 +633,7 @@ export function companiesPage(companies: any[], pendingTasks = 0) {
     `<div style="margin-bottom:16px">
       <h2 style="font-size:20px;margin-bottom:8px">Tracked Companies (${companies.length})</h2>
       <p class="muted">Companies discovered from emails, job listings, and research. Click Research to dig deeper.</p>
+      <div class="row" style="margin-top:12px">${sourceTabs}</div>
     </div>
     <div class="card">
       <form method="post" action="/api/companies/add" style="display:flex;gap:8px;flex-wrap:wrap">

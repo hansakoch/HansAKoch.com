@@ -1138,14 +1138,28 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
   }
 
   if (url.pathname === '/companies') {
+    const sourceFilter = url.searchParams.get('source') || '';
+
     // Get all tracked companies from research table + jobs
     const { results: research } = await env.DB.prepare(
       'SELECT * FROM research ORDER BY researched_at DESC LIMIT 100'
     ).all();
-    const { results: companies } = await env.DB.prepare(
-      `SELECT company, COUNT(*) as job_count, MAX(url) as url, MAX(score) as max_score
+
+    // Get companies with source filter
+    let companiesQuery = `SELECT company, source, COUNT(*) as job_count, MAX(url) as url, MAX(score) as max_score
+       FROM jobs WHERE verdict != 'reject' AND status NOT IN ('dropped','thumbs_down')`;
+    if (sourceFilter && sourceFilter !== 'all') {
+      companiesQuery += ` AND source = '${sourceFilter}'`;
+    }
+    companiesQuery += ' GROUP BY company, source ORDER BY job_count DESC LIMIT 100';
+
+    const { results: companies } = await env.DB.prepare(companiesQuery).all();
+
+    // Get source counts for tabs
+    const { results: sourceCounts } = await env.DB.prepare(
+      `SELECT source, COUNT(DISTINCT company) as companies, COUNT(*) as jobs
        FROM jobs WHERE verdict != 'reject' AND status NOT IN ('dropped','thumbs_down')
-       GROUP BY company ORDER BY job_count DESC LIMIT 100`
+       GROUP BY source`
     ).all();
 
     // Merge research and company data
@@ -1172,7 +1186,7 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
           url: '',
           career_page_url: '',
           about: '',
-          source: 'jobs',
+          source: (c as any).source || 'unknown',
           job_count: (c as any).job_count || 0,
           blocked: false,
         });
@@ -1182,7 +1196,7 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
       }
     }
 
-    return new Response(companiesPage(Array.from(companyMap.values()), pendingTasks), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    return new Response(companiesPage(Array.from(companyMap.values()), pendingTasks, sourceFilter), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
 
   if (url.pathname === '/review') {
