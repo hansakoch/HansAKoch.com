@@ -1289,7 +1289,16 @@ export default {
     } catch {
       text = '';
     }
+
+    // Extract company domain from sender
+    const senderDomain = from.match(/@([\w.-]+)/)?.[1]?.toLowerCase() || '';
+    const skipDomains = ['gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'protonmail.com', 'google.com', 'cloudflare.com'];
+    const isCompanyEmail = senderDomain && !skipDomains.some(d => senderDomain.includes(d));
+
+    // Classify the email
     const classified = classifyInbound(subject, text.slice(0, 4000));
+
+    // Try to match to existing job
     const { results } = await env.DB.prepare(
       "SELECT id, company, title, score FROM jobs WHERE status NOT IN ('dropped','thumbs_down') ORDER BY updated_at DESC LIMIT 50",
     ).all<{ id: string; company: string; title: string; score: number }>();
@@ -1300,6 +1309,7 @@ export default {
       return (c && blob.includes(c)) || (t && blob.includes(t));
     });
     const now = new Date().toISOString();
+
     if (match && classified.status) {
       // Confirmation received: boost score and update status
       let newScore = match.score;
@@ -1320,6 +1330,29 @@ export default {
         await remember(env, `Email job ingested: ${parsed.title} @ ${parsed.company} (${ingested.verdict})`);
       }
     }
+
+    // HOLISTIC: Research company from ANY non-personal email
+    if (isCompanyEmail && !match) {
+      // Check if we already have this company researched
+      const existing = await env.DB.prepare("SELECT job_id FROM research WHERE company_url LIKE ? OR company_url LIKE ?")
+        .bind(`%${senderDomain}%`, `%${senderDomain.replace('www.', '')}%`)
+        .first();
+
+      if (!existing) {
+        // New company — create a research opportunity
+        const company = senderDomain.split('.')[0].replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+        const jobData = {
+          title: `Research: ${company}`,
+          company,
+          url: `https://${senderDomain}`,
+          source: 'email-lead',
+          description: `Company email from: ${from}\nSubject: ${subject}\nDomain: ${senderDomain}\n\nThis company communicates with Hans. Research their career page for opportunities.`,
+        };
+        const result = await upsertJob(env, jobData);
+        await event(env, result.id, 'email-company-lead', `${company} from ${senderDomain}`);
+      }
+    }
+
     await event(env, match?.id || null, classified.kind, subject.slice(0, 200));
     await remember(env, `Inbound mail: ${subject} → ${classified.kind} ${match?.title || ''}`);
   },

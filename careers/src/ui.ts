@@ -32,7 +32,7 @@ details .detail{padding:8px 12px;border-left:3px solid #333;margin:4px 0}
 </style></head><body>
 <div class="top"><div class="wrap">
 <h1>Open Careers</h1>
-<p class="muted">${authed ? `<a href="/">Hot</a> · <a href="/apply">Apply</a> · <a href="/tasks" ${pendingTasks > 0 ? 'class="flash" style="color:#ff4444;font-weight:700"' : ''}>Tasks${pendingTasks > 0 ? ` (${pendingTasks})` : ''}</a> · <a href="/search">Search</a> · <a href="/me">Me</a>` : 'Private tenant board'}</p>
+<p class="muted">${authed ? `<a href="/">Hot</a> · <a href="/apply">Apply</a> · <a href="/tasks" ${pendingTasks > 0 ? 'class="flash" style="color:#ff4444;font-weight:700"' : ''}>Tasks${pendingTasks > 0 ? ` (${pendingTasks})` : ''}</a> · <a href="/review">Review</a> · <a href="/search">Search</a> · <a href="/me">Me</a>` : 'Private tenant board'}</p>
 </div></div>
 <div class="wrap">${body}</div>
 </body></html>`;
