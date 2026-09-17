@@ -32,7 +32,7 @@ details .detail{padding:8px 12px;border-left:3px solid #333;margin:4px 0}
 </style></head><body>
 <div class="top"><div class="wrap">
 <h1>Open Careers</h1>
-<p class="muted">${authed ? `<a href="/">Hot</a> · <a href="/apply">Apply</a> · <a href="/tasks" ${pendingTasks > 0 ? 'class="flash" style="color:#ff4444;font-weight:700"' : ''}>Tasks${pendingTasks > 0 ? ` (${pendingTasks})` : ''}</a> · <a href="/companies">Companies</a> · <a href="/review">Review</a> · <a href="/search">Search</a> · <a href="/me">Me</a>` : 'Private tenant board'}</p>
+<p class="muted">${authed ? `<a href="/">Hot</a> · <a href="/apply">Apply</a> · <a href="/companies">Companies</a> · <a href="/search">Search</a> · <a href="/me" ${pendingTasks > 0 ? 'class="flash" style="color:#ff4444;font-weight:700"' : ''}>Me${pendingTasks > 0 ? ` (${pendingTasks})` : ''}</a>` : 'Private tenant board'}</p>
 </div></div>
 <div class="wrap">${body}</div>
 </body></html>`;
@@ -406,10 +406,57 @@ DeVry University — Computer Science (2001–2003)
 SKILLS
 SEO, AEO, GEO, PPC, ORM, Growth Marketing, TypeScript, Python, Cloudflare Workers, D1, Durable Objects, Analytics, Team Leadership`;
 
-export function mePage(linkedinConnected = false) {
+export function mePage(linkedinConnected = false, tasks: any[] = [], reviewItems: any[] = [], pendingTasks = 0) {
+  const pendingTaskCount = tasks.filter(t => !t.done).length;
+  const pendingReviewCount = reviewItems.filter(r => !r.approved).length;
+
+  // Tasks section
+  const taskSection = tasks.length > 0 ? `
+    <div class="card" style="border-color:${pendingTaskCount > 0 ? '#ff4444' : '#4ade80'}">
+      <h3 style="margin-bottom:12px">Tasks ${pendingTaskCount > 0 ? `<span class="badge drop">${pendingTaskCount} pending</span>` : '<span class="badge ready">All done</span>'}</h3>
+      ${tasks.map(t => `
+        <div style="display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid #222">
+          <form method="post" action="/api/onboarding/${esc(t.key)}" style="flex-shrink:0">
+            <input type="hidden" name="done" value="${t.done ? '0' : '1'}"/>
+            <button class="btn ${t.done ? '' : 'pri'}" type="submit" style="min-width:44px;padding:8px">${t.done ? '✓' : '!'}</button>
+          </form>
+          <div>
+            <span style="${t.done ? 'color:#888;text-decoration:line-through' : 'color:#fff;font-weight:600'}">${esc(t.label)}</span>
+            <p class="muted" style="font-size:12px;margin-top:2px">${esc(t.detail)}</p>
+          </div>
+        </div>
+      `).join('')}
+    </div>` : '';
+
+  // Review section
+  const reviewSection = reviewItems.length > 0 ? `
+    <div class="card" style="border-color:${pendingReviewCount > 0 ? '#facc15' : '#4ade80'}">
+      <h3 style="margin-bottom:12px">Review ${pendingReviewCount > 0 ? `<span class="badge help">${pendingReviewCount} pending</span>` : '<span class="badge ready">All reviewed</span>'}</h3>
+      <form method="post" action="/api/review/approve">
+        ${reviewItems.map(item => `
+          <div style="padding:8px 0;border-bottom:1px solid #222">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <input type="checkbox" name="approved" value="${esc(item.id)}" ${item.approved ? 'checked' : ''} style="width:20px;height:20px;margin-top:4px;accent-color:#ff4444"/>
+              <div style="flex:1">
+                <strong style="color:#fff">${esc(item.section)}</strong>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+                  <div><p class="muted" style="font-size:11px">CURRENT</p><pre style="font-size:11px;color:#888">${esc(item.current)}</pre></div>
+                  <div><p class="muted" style="font-size:11px">PROPOSED</p><pre style="font-size:11px;color:#4ade80">${esc(item.proposed)}</pre></div>
+                </div>
+                <textarea name="comment_${esc(item.id)}" rows="2" placeholder="Feedback..." style="width:100%;background:#0a0a0a;border:1px solid #333;color:#fff;padding:6px;border-radius:6px;font-size:12px;margin-top:6px"></textarea>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+        <div class="row" style="margin-top:12px"><button class="btn pri" type="submit">Submit Review</button></div>
+      </form>
+    </div>` : '';
+
   return layout(
     'Me — Open Careers',
-    `<div class="card" style="border-color:#818cf8">
+    `${taskSection}
+    ${reviewSection}
+    <div class="card" style="border-color:#818cf8">
       <h3 style="color:#c7d2fe;margin-bottom:12px">Profile</h3>
       <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:14px">
         <span class="muted">Name</span><span style="color:#fff">Hans Al Koch (HAK)</span>

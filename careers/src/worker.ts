@@ -1118,7 +1118,21 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
   if (url.pathname === '/me') {
     const linkedinToken = await getToken(env.DB);
     const linkedinConnected = !!linkedinToken;
-    return new Response(mePage(linkedinConnected), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+
+    // Get tasks
+    await ensureOnboardingRows(env.DB);
+    const state = await getOnboardingState(env.DB);
+    const tasks = ONBOARDING_ITEMS.map((i) => ({ ...i, done: state[i.key] }));
+
+    // Get review items (LinkedIn profile updates)
+    const reviewItems = [
+      { id: 'headline', section: 'Headline', current: 'Agency Search Director @ Iceberg Media | SEO Credentials', proposed: 'AI Systems Architect | Director of Agent Optimization', approved: false },
+      { id: 'summary', section: 'Summary', current: '11 years SEO/PPC experience', proposed: '27+ years digital marketing, AI agents, Cloudflare, autonomous systems', approved: false },
+      { id: 'skills', section: 'Skills', current: 'GHL, Go HighLevel, SEO (3)', proposed: 'Cloudflare Workers, TypeScript, Python, AI Agents, SEO, AEO, PPC, ORM, etc. (20+)', approved: false },
+      { id: 'openroyleal', section: 'OpenRoyleAl (2025–Present)', current: '(missing)', proposed: 'AI Systems Architect & Founder — sovereign AI infrastructure, Alfred, Alfred.report', approved: false },
+    ];
+
+    return new Response(mePage(linkedinConnected, tasks, reviewItems, pendingTasks), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
 
   if (url.pathname === '/companies') {
