@@ -97,20 +97,21 @@ async function extraDeny(env: Env): Promise<string[]> {
   return (results || []).map((r) => r.pattern).filter(Boolean);
 }
 
-async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: string; skipResearch?: boolean } = {}) {
+async function upsertJob(env: Env, job: IncomingJob, opts: { statusOverride?: string; skipResearch?: boolean; forceAccept?: boolean } = {}) {
   const domain = atsDomain(job.url || '');
   const atlas = domain
     ? await env.DB.prepare('SELECT last_good_method, last_result FROM atlas WHERE domain = ?').bind(domain).first<{ last_good_method: string; last_result: string }>()
     : null;
   const row = await prepareRow(job, atlas, { extraDeny: await extraDeny(env) });
 
-  // Manual entries bypass gate filters
+  // Manual/forced entries bypass gate filters
   const isManual = job.source === 'manual';
+  const forceBypass = isManual || opts.forceAccept;
   let verdict = row.decision.verdict;
   let score = row.decision.score;
   let status = row.status;
 
-  if (isManual && verdict === 'reject') {
+  if (forceBypass && verdict === 'reject') {
     verdict = 'maybe';
     score = Math.max(score, 50);
     status = 'hot';
@@ -332,9 +333,10 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     let dropped = 0;
     const ids: string[] = [];
     const skipResearch = body.skip_research === true;
+    const forceAccept = body.force === true;
     for (const job of incoming) {
       if (!job?.title) continue;
-      const r = await upsertJob(env, job, { skipResearch });
+      const r = await upsertJob(env, job, { skipResearch, forceAccept });
       ids.push(r.id);
       if (r.verdict === 'reject') dropped += 1;
       else kept += 1;
