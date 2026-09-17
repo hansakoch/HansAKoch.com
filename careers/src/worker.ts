@@ -1371,7 +1371,38 @@ export default {
         const plan = planSearch(DEFAULT_PROFILE, env);
         await kickSearch(plan);
 
-        // 2. Process scheduled applications
+        // 2. Auto-research unresearched companies (5 per cron run)
+        try {
+          const { results: unresearched } = await env.DB.prepare(
+            `SELECT j.id, j.title, j.company, j.url, j.description, j.location
+             FROM jobs j LEFT JOIN research r ON j.id = r.job_id
+             WHERE r.job_id IS NULL AND j.verdict != 'reject'
+             AND j.status NOT IN ('dropped','thumbs_down')
+             AND j.source IN ('yc', 'speedrun', 'email-lead', 'newsletter', 'manual')
+             ORDER BY j.score DESC LIMIT 5`
+          ).all();
+
+          for (const job of unresearched || []) {
+            try {
+              const research = await generateResearch(env, job as any);
+              if (research.company_url && !research.career_page_url) {
+                try { research.career_page_url = await findCareerPage(research.company_url); } catch {}
+              }
+              await storeResearch(env.DB, research);
+
+              // Generate packet if career page found
+              if (research.career_page_url) {
+                const packet = await generatePacket(env, job as any, research);
+                if (packet.resume_md) {
+                  await env.DB.prepare('UPDATE jobs SET resume_md=?, cover_md=?, updated_at=? WHERE id=?')
+                    .bind(packet.resume_md, packet.cover_md, new Date().toISOString(), (job as any).id).run();
+                }
+              }
+            } catch {}
+          }
+        } catch {}
+
+        // 3. Process scheduled applications
         const now = new Date().toISOString();
         const { results: dueJobs } = await env.DB.prepare(
           "SELECT * FROM jobs WHERE status = 'queued' AND scheduled_at IS NOT NULL AND scheduled_at <= ? ORDER BY scheduled_at ASC LIMIT 5"
@@ -1397,7 +1428,7 @@ export default {
           }
         }
 
-        // 3. Send digest
+        // 4. Send digest
         await sendDigest(env, 'https://careers.hansakoch.com');
       })(),
     );
