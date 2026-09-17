@@ -1243,7 +1243,11 @@ export default {
   async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(
       (async () => {
-        // Process scheduled applications
+        // 1. Run search
+        const plan = planSearch(DEFAULT_PROFILE, env);
+        await kickSearch(plan);
+
+        // 2. Process scheduled applications
         const now = new Date().toISOString();
         const { results: dueJobs } = await env.DB.prepare(
           "SELECT * FROM jobs WHERE status = 'queued' AND scheduled_at IS NOT NULL AND scheduled_at <= ? ORDER BY scheduled_at ASC LIMIT 5"
@@ -1257,24 +1261,19 @@ export default {
               await env.DB.prepare("UPDATE jobs SET status='needs_you', updated_at=? WHERE id=?").bind(now, job.id).run();
               continue;
             }
-
             const result = await applyViaBrowser(env, job, careerUrl, job.resume_md || '', job.cover_md || '');
             if (result.success) {
               await env.DB.prepare("UPDATE jobs SET status='applied', updated_at=? WHERE id=?").bind(now, job.id).run();
               await event(env, job.id, 'applied', `Browser Run: ${result.pageTitle}`);
             } else {
               await env.DB.prepare("UPDATE jobs SET status='needs_you', updated_at=? WHERE id=?").bind(now, job.id).run();
-              await event(env, job.id, 'apply-failed', result.error || 'unknown');
             }
-          } catch (e: any) {
+          } catch {
             await env.DB.prepare("UPDATE jobs SET status='needs_you', updated_at=? WHERE id=?").bind(now, job.id).run();
-            await event(env, job.id, 'apply-error', e?.message || 'unknown');
           }
         }
 
-        // Also run search
-        const plan = planSearch(DEFAULT_PROFILE, env);
-        await kickSearch(plan);
+        // 3. Send digest
         await sendDigest(env, 'https://careers.hansakoch.com');
       })(),
     );
