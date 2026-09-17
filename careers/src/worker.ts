@@ -6,7 +6,7 @@ import { digestHtml, digestText, classifyInbound, sendDigestMail, type HotJob } 
 import { remember, reportOral, standingBrief } from './oral.ts';
 import { PROBE_PERSONA, suggestMethod } from './apply/atlas.ts';
 import { snapshotPacket } from './artifacts.ts';
-import { applyPage, boardPage, layout, loginPage, mePage, onboardingPage, reviewPage, searchPage } from './ui.ts';
+import { applyPage, boardPage, companiesPage, layout, loginPage, mePage, onboardingPage, reviewPage, searchPage } from './ui.ts';
 import { followUpDraft } from './apply/followup.ts';
 import { jobsFromRss } from './search/rss.ts';
 import { parseJobFromEmail, EMAIL_ARCHIVE_NOTE } from './search/email-ingest.ts';
@@ -684,6 +684,52 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     return Response.redirect(new URL('/review?submitted=1', url).toString(), 302);
   }
 
+  // Add a company to track
+  if (p === '/api/companies/add' && method === 'POST') {
+    const body = await readBody(request);
+    const company = String(body.company || '').trim();
+    const url = String(body.url || '').trim();
+    if (!company) return json({ success: false, error: 'company name required' }, 400);
+
+    // Create a research entry
+    const jobId = await jobId({ title: `Research: ${company}`, company, url });
+    const now = new Date().toISOString();
+    await env.DB.prepare(
+      `INSERT INTO research (job_id, company_url, career_page_url, company_about, company_values, team_info, hiring_manager, culture_notes, application_questions, opportunity_type, opportunity_title, score_rationale, researched_at)
+       VALUES (?, ?, '', '', '', '', '', '', '[]', 'career_direct', '', '', ?)
+       ON CONFLICT(job_id) DO NOTHING`
+    ).bind(jobId, url || `https://${company.toLowerCase().replace(/\s+/g, '')}.com`, now).run();
+
+    // Also create a job entry
+    await upsertJob(env, {
+      title: `${company} - Career Direct`,
+      company,
+      url: url || `https://${company.toLowerCase().replace(/\s+/g, '')}.com`,
+      source: 'manual',
+      description: `Company tracked manually by Hans. Research career page for opportunities.`,
+    });
+
+    await event(env, null, 'company-add', company);
+    return Response.redirect(new URL('/companies', url).toString(), 302);
+  }
+
+  // Trigger research on a company
+  const companyResearchMatch = p.match(/^\/api\/companies\/([^/]+)\/research$/);
+  if (companyResearchMatch && method === 'POST') {
+    const domain = decodeURIComponent(companyResearchMatch[1]);
+    const job = await env.DB.prepare('SELECT * FROM jobs WHERE company LIKE ? OR url LIKE ? LIMIT 1')
+      .bind(`%${domain}%`, `%${domain}%`).first<any>();
+    if (job) {
+      const research = await generateResearch(env, job);
+      if (research.company_url && !research.career_page_url) {
+        try { research.career_page_url = await findCareerPage(research.company_url); } catch {}
+      }
+      await storeResearch(env.DB, research);
+      await event(env, job.id, 'company-research', domain);
+    }
+    return Response.redirect(new URL('/companies', url).toString(), 302);
+  }
+
   // Training questions API
   if (p === '/api/training' && method === 'GET') {
     const { results } = await env.DB.prepare(
@@ -1073,6 +1119,54 @@ async function handlePage(request: Request, env: Env, url: URL): Promise<Respons
     const linkedinToken = await getToken(env.DB);
     const linkedinConnected = !!linkedinToken;
     return new Response(mePage(linkedinConnected), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  }
+
+  if (url.pathname === '/companies') {
+    // Get all tracked companies from research table + jobs
+    const { results: research } = await env.DB.prepare(
+      'SELECT * FROM research ORDER BY researched_at DESC LIMIT 100'
+    ).all();
+    const { results: companies } = await env.DB.prepare(
+      `SELECT company, COUNT(*) as job_count, MAX(url) as url, MAX(score) as max_score
+       FROM jobs WHERE verdict != 'reject' AND status NOT IN ('dropped','thumbs_down')
+       GROUP BY company ORDER BY job_count DESC LIMIT 100`
+    ).all();
+
+    // Merge research and company data
+    const companyMap = new Map<string, any>();
+    for (const r of research || []) {
+      const key = (r as any).company_url || (r as any).job_id;
+      companyMap.set(key, {
+        company: (r as any).company_url?.replace(/https?:\/\/(www\.)?/, '').split('/')[0] || '',
+        domain: (r as any).company_url?.replace(/https?:\/\/(www\.)?/, '').split('/')[0] || '',
+        url: (r as any).company_url || '',
+        career_page_url: (r as any).career_page_url || '',
+        about: (r as any).company_about || '',
+        source: 'research',
+        job_count: 0,
+        blocked: false,
+      });
+    }
+    for (const c of companies || []) {
+      const company = (c as any).company || '';
+      if (!companyMap.has(company)) {
+        companyMap.set(company, {
+          company,
+          domain: '',
+          url: '',
+          career_page_url: '',
+          about: '',
+          source: 'jobs',
+          job_count: (c as any).job_count || 0,
+          blocked: false,
+        });
+      } else {
+        const existing = companyMap.get(company)!;
+        existing.job_count = (c as any).job_count || 0;
+      }
+    }
+
+    return new Response(companiesPage(Array.from(companyMap.values()), pendingTasks), { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
 
   if (url.pathname === '/review') {

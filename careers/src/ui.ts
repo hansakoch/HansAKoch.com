@@ -32,7 +32,7 @@ details .detail{padding:8px 12px;border-left:3px solid #333;margin:4px 0}
 </style></head><body>
 <div class="top"><div class="wrap">
 <h1>Open Careers</h1>
-<p class="muted">${authed ? `<a href="/">Hot</a> · <a href="/apply">Apply</a> · <a href="/tasks" ${pendingTasks > 0 ? 'class="flash" style="color:#ff4444;font-weight:700"' : ''}>Tasks${pendingTasks > 0 ? ` (${pendingTasks})` : ''}</a> · <a href="/review">Review</a> · <a href="/search">Search</a> · <a href="/me">Me</a>` : 'Private tenant board'}</p>
+<p class="muted">${authed ? `<a href="/">Hot</a> · <a href="/apply">Apply</a> · <a href="/tasks" ${pendingTasks > 0 ? 'class="flash" style="color:#ff4444;font-weight:700"' : ''}>Tasks${pendingTasks > 0 ? ` (${pendingTasks})` : ''}</a> · <a href="/companies">Companies</a> · <a href="/review">Review</a> · <a href="/search">Search</a> · <a href="/me">Me</a>` : 'Private tenant board'}</p>
 </div></div>
 <div class="wrap">${body}</div>
 </body></html>`;
@@ -540,6 +540,49 @@ export function searchPage(queries: { term: string; location: string }[], status
         <li>RSS feeds</li>
       </ul>
     </div>`,
+    true,
+    pendingTasks,
+  );
+}
+
+export function companiesPage(companies: any[], pendingTasks = 0) {
+  const cards = companies.map(c => {
+    const hasJobs = (c.job_count || 0) > 0;
+    const hasCareerPage = !!c.career_page_url;
+    const blocked = c.blocked ? 'BLOCKED' : '';
+    return `<div class="card" style="border-color:${hasCareerPage ? '#4ade80' : '#333'}">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+          <strong style="color:#fff;font-size:15px">${esc(c.company || c.domain || 'Unknown')}</strong>
+          ${blocked ? '<span class="badge drop" style="margin-left:8px">BLOCKED</span>' : ''}
+          ${hasCareerPage ? '<span class="badge ready" style="margin-left:8px">CAREER PAGE</span>' : ''}
+          ${hasJobs ? `<span class="badge" style="background:#1a1a3a;color:#a78bfa;margin-left:8px">${c.job_count} jobs</span>` : ''}
+        </div>
+        <div class="row" style="margin:0">
+          ${c.url ? `<a class="btn" href="${esc(c.url)}" target="_blank" rel="noopener">Website</a>` : ''}
+          ${hasCareerPage ? `<a class="btn" href="${esc(c.career_page_url)}" target="_blank" rel="noopener">Careers</a>` : ''}
+          <form method="post" action="/api/companies/${esc(c.domain || c.company)}/research" style="display:inline"><button class="btn" type="submit">Research</button></form>
+        </div>
+      </div>
+      ${c.about ? `<p class="muted" style="margin-top:8px">${esc(c.about.slice(0, 200))}</p>` : ''}
+      ${c.source ? `<p class="muted" style="font-size:11px;margin-top:4px">Source: ${esc(c.source)}</p>` : ''}
+    </div>`;
+  }).join('');
+
+  return layout(
+    'Companies — Open Careers',
+    `<div style="margin-bottom:16px">
+      <h2 style="font-size:20px;margin-bottom:8px">Tracked Companies (${companies.length})</h2>
+      <p class="muted">Companies discovered from emails, job listings, and research. Click Research to dig deeper.</p>
+    </div>
+    <div class="card">
+      <form method="post" action="/api/companies/add" style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="text" name="company" placeholder="Company name" style="flex:1;min-width:150px" required/>
+        <input type="url" name="url" placeholder="https://company.com" style="flex:1;min-width:200px"/>
+        <button class="btn pri" type="submit">Add Company</button>
+      </form>
+    </div>
+    ${cards || '<p class="muted">No companies tracked yet. They are discovered from emails, job listings, and manual adds.</p>'}`,
     true,
     pendingTasks,
   );
